@@ -24,6 +24,7 @@ function Camera(mainCanvas,  svg)
 	canvas.addEventListener('keydown', onKeyDown, false);
 	canvas.addEventListener('keyup', onKeyUp, false);
 	canvas.onwheel = onMouseWheel;
+	canvas.oncontextmenu = onContextMenu;
 
 	this.onResize = function()
 	{
@@ -181,6 +182,31 @@ function Camera(mainCanvas,  svg)
 		return this.drawLineStrip(points, true, color, width, fillColor, dash);
 	}
 
+	this.drawFrustum = function(o, fov, aspect, near, far, xAxis, yAxis, zAxis, color, width, fillColor, dash)
+	{
+		var p = new Array(8);
+
+		var tanY = Math.tan(fov * 0.5 * Math.PI / 180);
+		var tanX = tanY / aspect;
+
+		p[0] = mad(xAxis, -tanX * near, mad(yAxis, +tanY * near, mad(zAxis, near, o)));
+		p[1] = mad(xAxis, +tanX * near, mad(yAxis, +tanY * near, mad(zAxis, near, o)));
+		p[2] = mad(xAxis, +tanX * near, mad(yAxis, -tanY * near, mad(zAxis, near, o)));
+		p[3] = mad(xAxis, -tanX * near, mad(yAxis, -tanY * near, mad(zAxis, near, o)));
+
+		p[4] = mad(xAxis, -tanX * far, mad(yAxis, +tanY * far, mad(zAxis, far, o)));
+		p[5] = mad(xAxis, +tanX * far, mad(yAxis, +tanY * far, mad(zAxis, far, o)));
+		p[6] = mad(xAxis, +tanX * far, mad(yAxis, -tanY * far, mad(zAxis, far, o)));
+		p[7] = mad(xAxis, -tanX * far, mad(yAxis, -tanY * far, mad(zAxis, far, o)));
+
+		this.drawLineStrip([p[0], p[1], p[2], p[3]] , true, color, width, fillColor, dash);
+		this.drawLineStrip([p[7], p[6], p[5], p[4]] , true, color, width, fillColor, dash);
+		this.drawLineStrip([p[0], p[4], p[5], p[1]] , true, color, width, fillColor, dash);
+		this.drawLineStrip([p[1], p[5], p[6], p[2]] , true, color, width, fillColor, dash);
+		this.drawLineStrip([p[2], p[6], p[7], p[3]] , true, color, width, fillColor, dash);
+		this.drawLineStrip([p[0], p[3], p[7], p[4]] , true, color, width, fillColor, dash);
+	}
+
 	this.drawArrow = function(pStart, pEnd, sizeInPixels, color, width, dash)
 	{
 		return graphics.drawArrow(transformP(pStart), transformP(pEnd), sizeInPixels, color, width, dash);
@@ -202,12 +228,14 @@ function Camera(mainCanvas,  svg)
 	var angleThetaDragStart;
 	var anglePhiDragStart;
 	var viewTargetDragStart;
+	var viewDistanceDragStart;
 	var rotateSensitivity = 20;
 	var wheelSensitivity = 300;
+	var zoomSensitivity = 300;
 
 	function onMouseMove(evt)
 	{
-		if (evt.buttons & 1)
+		if (evt.buttons & 1) // rotate
 		{
 			var deltaX = evt.clientX - mousePosDragStart.x;
 			var deltaY = evt.clientY - mousePosDragStart.y;
@@ -220,7 +248,7 @@ function Camera(mainCanvas,  svg)
 
 			updateProjection();
 		}
-		else if (evt.buttons & 4)
+		else if (evt.buttons & 4) // pan
 		{
 			var deltaX = -(evt.clientX - mousePosDragStart.x) / (canvasW / 2) * view_distance / projMtx[0][0];
 			var deltaY = (evt.clientY - mousePosDragStart.y) / (canvasH / 2) * view_distance / projMtx[1][1];
@@ -233,14 +261,26 @@ function Camera(mainCanvas,  svg)
 
 			updateProjection();
 		}
+		else if (evt.buttons & 2) // zoom
+		{
+			var deltaX = (evt.clientX - mousePosDragStart.x) / zoomSensitivity;
+			var deltaY = (evt.clientY - mousePosDragStart.y) / zoomSensitivity;
+
+			var delta = Math.max(deltaX, deltaY);
+
+			view_distance = viewDistanceDragStart * (1 - deltaX);
+			view_distance = Math.max(0.1, view_distance);
+			updateProjection();
+		}
 	}
 
 	function onMouseDown(evt)
 	{
-		mousePosDragStart	= new Vector( evt.clientX, evt.clientY, 0 );
-		angleThetaDragStart	= view_angleTheta;
-		anglePhiDragStart	= view_anglePhi;
-		viewTargetDragStart	= view_target.copy();
+		mousePosDragStart		= new Vector( evt.clientX, evt.clientY, 0 );
+		angleThetaDragStart		= view_angleTheta;
+		anglePhiDragStart		= view_anglePhi;
+		viewTargetDragStart		= view_target.copy();
+		viewDistanceDragStart	= view_distance;
 	}
 
 	function onMouseUp(evt)
@@ -263,6 +303,10 @@ function Camera(mainCanvas,  svg)
 		view_distance *= 1 - evt.wheelDelta / wheelSensitivity;
 		view_distance = Math.max(0.1, view_distance);
 		updateProjection();
+	}
+	function onContextMenu(evt)
+	{
+		return false;
 	}
 
 	this.getCanvas			= function() { return canvas;	}

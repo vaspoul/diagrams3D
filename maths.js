@@ -1,8 +1,17 @@
 function Vector(x,y,z)
 {
-  this.x = x || 0;
-  this.y = y || 0;
-  this.z = z || 0;
+	if (Array.isArray(x) && y == undefined && z == undefined)
+	{
+		this.x = x[0] || 0;
+		this.y = x[1] || 0;
+		this.z = x[2] || 0;
+	}
+	else
+	{
+		this.x = x || 0;
+		this.y = y || 0;
+		this.z = z || 0;
+	}
 }
 
 Vector.prototype.copy = function()

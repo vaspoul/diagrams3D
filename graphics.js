@@ -19,19 +19,38 @@ function Graphics(canvas_, svg)
 		canvasAspect = canvasW / canvasH;
 	}
 
-	function clipLine(a,b)
-	{
-		if (a[2] <= 0 && b[2] <= 0)
-			return [];
+	//function clipLine(a,b)
+	//{
+	//	if (a[3] > b[3])
+	//		return clipLine(b,a);
 
-		if (a[2] >= 1 && b[2] >= 1)
-			return [];
+	//	if (b[2] <= 0)
+	//		return [];
 
-		if (a[2] >= 0 && b[2] >= 0 && a[2] <= 1 && b[2] <= 1)
-			return [a,b];
+	//	if (a[2] >= 1)
+	//		return [];
 
+	//	if (a[2] >= 0 && b[2] <= 1)
+	//		return [a,b];
 
-	}
+	//	var vA = new Vector(a);
+	//	var vB = new Vector(b);
+	//	var delta = sub(vB, vA);
+
+	//	var zA = a[3];
+	//	var zB = b[3];
+	//	var deltaZ = zB - zA;
+	//	var p0;
+	//	var p1;
+
+	//	if (zA<0)		p0 = mad(delta, -zA/deltaZ, vA);
+	//	else			p0 = vA;
+
+	//	if (zB>1)		p1 = mad(delta, (1-zA)/deltaZ, vA);
+	//	else			p1 = vB;
+		
+	//	return [ [p0.x, p0.y, p0.z, 0], [p1.x, p1.y, p1.z, 1] ];
+	//}
 
 	this.drawLine = function(a,b,color,width,dash)
 	{
