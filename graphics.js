@@ -158,7 +158,7 @@ function Graphics(canvas_, svg)
 		}
 	}
 
-	function drawArrow(pStart,pEnd,sizeInPixels, color,width,dash)
+	this.drawArrow = function(pStart,pEnd,sizeInPixels, color,width,dash)
 	{
 		if (typeof(color) === "undefined")
 			color = "#000000";
@@ -172,12 +172,15 @@ function Graphics(canvas_, svg)
 		if (sizeInPixels == undefined)
 			sizeInPixels = 20;
 
+		pStart = new Vector(pStart[0], pStart[1], 0);
+		pEnd = new Vector(pEnd[0], pEnd[1], 0);
+
 		var length = sub(pEnd, pStart).length();
 		V = sub(pEnd, pStart).unit();
 
 		var B = add(pStart, mul(V, length-sizeInPixels-width/2));
 		var E = add(pStart, mul(V,length));
-		var T = transpose(V);
+		var T = new Vector(V.y, -V.x, 0);
 		var P0 = add(B, mul(T, 5*sizeInPixels/20 + width/2));
 		var P1 = add(B, mul(T, -5*sizeInPixels/20 - width/2));
 
@@ -188,18 +191,18 @@ function Graphics(canvas_, svg)
 
 		// Line
 		context.beginPath();
-		context.moveTo(pStart[0], pStart[1]);
-		context.lineTo(B[0], B[1]);
+		context.moveTo(pStart.x, pStart.y);
+		context.lineTo(B.x, B.y);
 		context.stroke();
 
 		// Arrow head
 		context.beginPath();
 		context.lineWidth = 1;
 		context.setLineDash([]);
-		context.moveTo(E[0], E[1]);
-		context.lineTo(P0[0], P0[1]);
-		context.lineTo(P1[0], P1[1]);
-		context.lineTo(E[0], E[1]);
+		context.moveTo(E.x, E.y);
+		context.lineTo(P0.x, P0.y);
+		context.lineTo(P1.x, P1.y);
+		context.lineTo(E.x, E.y);
 		context.stroke();
 		context.fill();
 	}

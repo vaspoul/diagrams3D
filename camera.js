@@ -7,8 +7,8 @@ function Camera(mainCanvas,  svg)
 
 	var view_target = new Vector(0,0,0);
 	var view_distance = 10;
-	var view_anglePhi = 0;
-	var view_angleTheta = 0;
+	var view_anglePhi = 60;
+	var view_angleTheta = -45;
 	var FOV = 90;
 	var aspect = canvasW / canvasH;
 	var near = 0.1;
@@ -91,7 +91,12 @@ function Camera(mainCanvas,  svg)
 
 	this.drawTarget = function()
 	{
-		var p = transformP(view_target);
+		this.drawPoint(view_target, "#000000");
+	}
+
+	this.drawPoint = function(p, color)
+	{
+		var p = transformP(p);
 		var s = 2;
 
 		var points = [	[ p[0] - s, p[1] - s, 1, view_distance ],
@@ -99,7 +104,7 @@ function Camera(mainCanvas,  svg)
 						[ p[0] + s, p[1] + s, 1, view_distance ],
 						[ p[0] - s, p[1] + s, 1, view_distance ] ];
 
-		return graphics.drawLineStrip(points, true, "#000000", 1);
+		return graphics.drawLineStrip(points, true, color, 1);
 	}
 
 	this.drawLine = function(a,b,color,width,dash,ownerObject)
