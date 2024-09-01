@@ -1,13 +1,18 @@
 <html>
 <head>
+	
+	<link href="styles.css" rel="stylesheet">
 
 	<script type = "text/javascript" src = "maths.js"></script>
 	<script type = "text/javascript" src = "graphics.js"></script>
 	<script type = "text/javascript" src = "camera.js"></script>
+	<script type = "text/javascript" src = "ui.js"></script>
 
 	<script>
 
 		var camera;
+		var bulbRadius = 1;
+		var bulbLength = 2;
 
 		window.addEventListener("resize",onResize);
 
@@ -38,9 +43,13 @@
 			canvas.addEventListener('dblclick',onMouseDblClick,false);
 			document.addEventListener('keydown',onKeyDown,false);
 			document.addEventListener('keyup',onKeyUp,false);
-			//canvas.onwheel = onMouseWheel;
 			document.addEventListener('mousewheel',onMouseWheel,false);
 			canvas.focus();
+
+			var controls = new PropertyGrid(document.getElementById("controlsDock"));
+
+			controls.addProperty("Bulb Radius", new Slider(0, 4, bulbRadius, 0.1, function(value) { bulbRadius = value; draw(); }));
+			controls.addProperty("Bulb Length", new Slider(0, 10, bulbLength, 0.1, function(value) { bulbLength = value; draw(); }));
 
 			onResize();
 		}
@@ -98,9 +107,9 @@
 
 			camera.drawQuad(new Vector(0,2.5,0), 6, 5, new Vector(1,0,0), new Vector(0,1,0), "rgba(0,255,0,1)", "rgba(0,255,0,0.3)", 1);
 
-			camera.drawCapsule(new Vector(0,5,0), 2, 1, new Vector(1,0,0), new Vector(0,0,1), "#00FF00", 1);
+			camera.drawCapsule(new Vector(0,5,0), bulbLength*0.5, bulbRadius, new Vector(1,0,0), new Vector(0,0,1), "#00FF00", 1);
 
-			camera.drawFrustum(new Vector(0,5+3,0), 90, 3, 3, 5+3, new Vector(0,0,-1), new Vector(1,0,0), new Vector(0,-1,0), "#00FF00", 1);
+			camera.drawFrustum(new Vector(0,5+3,0), 90, 3, 3, 5+3, new Vector(0,0,-1), new Vector(1,0,0), new Vector(0,-1,0), "#00FF00");
 		}
 
 	</script>
@@ -108,8 +117,20 @@
 
 <body>
 
+	<div>
 	<canvas id = "mainCanvas" style = "position:fixed; left:0; top:0;"/>
+	</div>
 
+	<div id="controlsDock" class="toolbar" style="	top:8px;
+								position:fixed;
+								right:8px;
+								width:330px;
+								padding:0 5px;
+								border:1px solid #DDDDDD;
+								box-shadow:3px 3px 5px #999999;
+								text-align:left;">
+	<center>Controls</center>
+	</div>
 </body>
 
 <script>

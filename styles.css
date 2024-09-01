@@ -1,0 +1,319 @@
+.toolbar
+{
+    font-family: 'Open Sans', sans-serif;
+    font-size: 14px;
+}
+
+.hint
+{
+    font-family: 'Open Sans', sans-serif;
+    font-size: 16px;
+}
+
+.subtleHint
+{
+    font-family: 'Open Sans', sans-serif;
+    font-size: 14px;
+}
+
+.appearOnHover
+{
+    font-family: 'Open Sans', sans-serif;
+    font-size: 16px;
+}
+
+button
+{
+    font-size: 14px;
+    padding: 0 5px;
+}
+
+table.valuesTable, table.valuesTable tr, table.valuesTable tr td 
+{
+	border: none;
+}
+
+table.valuesTable tr th
+{
+	border: none;
+	border-bottom: 2px solid black;
+}
+
+table.toolbar
+{
+    white-space:nowrap;
+    border-spacing:0px;
+}
+
+table.toolbar tr
+{
+    display:table-row;
+    white-space:nowrap;
+    overflow:visible;
+}
+
+table.toolbar td 
+{
+    white-space:nowrap;
+    text-align:center;
+    display:table-cell;
+
+    border-right:1px solid #BBBBBB;
+    padding-left:5px;
+    padding-right:5px;
+}
+
+table.toolbar tr th
+{
+	border: none;
+	border-bottom: 2px solid black;
+}
+
+table.contextMenuTable tr:hover
+{
+    background-color: #BBBBBB;
+}
+
+.toolbar
+{
+    background-color: #EEEEEE;
+}
+
+.toolbar .resizeGrip 
+{
+    border:1px solid transparent;
+}
+
+.toolbar .resizeGrip:hover {
+    border:1px solid black;
+}
+
+.toolbar input 
+{
+    background:#F5F5E5;
+}
+
+.toolbar input[type=range] {
+    background:#F5F5E5;
+    max-width:130px;
+}
+
+.toolbar textarea {
+    background:#F5F5E5;
+}
+
+.toolbar .link {
+    color: dodgerblue;
+}
+
+.toolbar .link:hover {
+    font-weight: bold;
+}
+
+.toolbar input[type=text] {
+    background:#F5F5E5;
+    border:1px solid dodgerblue;
+    padding:1px;
+}
+
+.toolbar input[type=text]:hover {
+    background:#F5F5E5;
+    border:2px solid dodgerblue;
+    padding:0px;
+}
+
+.toolbar select {
+    border:1px solid dodgerblue;
+    padding:1px;
+}
+
+.toolbar select:hover {
+    border:2px solid dodgerblue;
+    padding:0px;
+}
+
+.toolbar .blueborder {
+    border:1px solid dodgerblue;
+    padding:1px;
+}
+
+.toolbar .blueborder:hover {
+    border:2px solid dodgerblue;
+    padding:0px;
+}
+
+.toolbar button {
+    border-left:2px solid lightskyblue;
+    border-top:2px solid lightskyblue;
+    border-right:2px solid #888888;
+    border-bottom:2px solid #888888;
+}
+
+.toolbar button:hover {
+    background:#AAAAAA;
+}
+
+.toolbar button:active {
+    border-left:2px solid #888888;
+    border-top:2px solid #888888;
+    border-right:2px solid lightskyblue;
+    border-bottom:2px solid lightskyblue;
+}
+
+.toolbar button:focus {
+    outline:0px;
+}
+
+input {
+    background:#F5F5E5;
+}
+
+
+.hint 
+{
+    background-color: rgba(0,0,0,0.7);
+    border-radius:8px;
+    padding:0px 10px 10px;
+    pointer-events:none;
+    border:1px solid black;
+    box-shadow:3px 3px 5px #999999;
+    color: white;
+    font-size:small;
+    max-width:250px;
+}
+
+.subtleHint
+{
+    pointer-events:none;
+    color: grey;
+}
+
+.subtleHint h1
+{
+    font-size: 15px;
+}
+
+.hint h1
+{
+    color: #ffd800;
+    text-align: center;
+    text-shadow: 1px 1px 0px #000000;
+}
+
+.hint *
+{
+    color: white;
+    font-size:14px;
+}
+
+.hintCloseButton {
+    pointer-events:auto;
+}
+
+.hintCloseButton:hover {
+    -webkit-filter: invert(100%);
+    filter: invert(100%)
+}
+
+.subtleHint .hintCloseButton {
+    pointer-events:auto;
+    visibility:visible;
+    opacity:0.1;
+}
+
+.subtleHint .hintCloseButton:hover {
+    visibility:visible;
+    -webkit-filter: none;
+    filter: none;
+    opacity:1;
+}
+
+
+
+.appearOnHover {
+    border:1px solid transparent;
+    transition:border 0.3s ease;
+}
+
+.appearOnHover:hover {
+    border:1px solid transparent;
+}
+
+.appearOnHover .foreground {
+    opacity:0;
+    transition:opacity 0.3s ease;
+    background:rgba(41, 213, 237, 0.5);
+
+}
+
+.appearOnHover:hover .foreground {
+    opacity:1;
+}
+
+.appearOnHover .background {
+    opacity:1;
+    transition:opacity 0.3s ease;
+}
+
+.appearOnHover:hover .background {
+    opacity:1;
+}
+
+.button {
+    background:#EEEEEE;
+}
+
+.button:hover {
+    background:#AAAAAA;
+}
+
+.button:active{
+    background:#FFFFFF;
+}
+
+.button .buttonLabel {
+    white-space: nowrap;
+    overflow: hidden;
+}
+
+.fileButton {
+    background:none;
+    border-radius:10px; 
+    padding:5px;
+    box-shadow:none;
+}
+
+.fileButton:hover {
+    background:rgba(41, 213, 237, 1);
+    box-shadow:3px 3px 5px #999999;
+}
+
+.fileButton:active{
+    left:3px;
+    top:3px;
+    box-shadow:none;
+}
+
+.keybutton {
+    font-family: 'Open Sans', sans-serif;
+    font-size: 14px;
+    background-color: #EEEEEE;
+    border:1px solid #808080;
+    border-radius:8px;
+    display:inline-block;
+    width:80px;
+    text-align:center;
+    padding:5px;
+    margin-left:5px;
+    margin-right:5px;
+    box-shadow:3px 3px 5px #999999;
+    user-select:none;
+    -ms-user-select:none;
+    -webkit-user-select:none;
+}
+
+.keybutton.active {
+    transform: translateX(4px) translateY(4px);
+    box-shadow:1px 1px 3px #999999;
+    background-color: #AAAAAA;
+}

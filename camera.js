@@ -161,7 +161,7 @@ function Camera(mainCanvas,  svg)
 		return this.drawLineStrip(points, true, color, width, dash, fillColor);
 	}
 
-	this.drawCapsule = function(p, halfLegth, radius, longAxis, shortAxis, color, width, fillColor, segments, dash)
+	this.drawCapsule = function(p, halfLength, radius, longAxis, shortAxis, color, width, fillColor, segments, dash)
 	{
 		if (typeof(segments) === "undefined")
 			segments = 32;
@@ -175,8 +175,8 @@ function Camera(mainCanvas,  svg)
 			var angle = Math.PI / 2 + (i/segments) * Math.PI * 2;
 			var cosAngle = Math.cos(angle);
 			var sinAngle = Math.sin(angle);
-			var offset = (i>=segments/2) ? halfLegth : -halfLegth;
-			points[i] = mad(longAxis, offset, mad(longAxis, cosAngle * radius, mad(shortAxis, sinAngle, p)));
+			var offset = (i>=segments/2) ? halfLength : -halfLength;
+			points[i] = mad(longAxis, offset, mad(longAxis, cosAngle * radius, mad(shortAxis, sinAngle * radius, p)));
 		}
 
 		return this.drawLineStrip(points, true, color, width, fillColor, dash);
