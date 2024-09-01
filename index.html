@@ -1,0 +1,117 @@
+<html>
+<head>
+
+	<script type = "text/javascript" src = "maths.js"></script>
+	<script type = "text/javascript" src = "graphics.js"></script>
+	<script type = "text/javascript" src = "camera.js"></script>
+
+	<script>
+
+		var camera;
+
+		window.addEventListener("resize",onResize);
+
+		function onResize() 
+		{
+			if(camera != undefined) 
+			{
+				canvas.width = window.innerWidth;
+				canvas.height = window.innerHeight;
+
+				camera.onResize();
+
+				draw();
+			}
+		}
+
+		function setup() 
+		{
+			canvas = document.getElementById("mainCanvas");
+			canvas.width = window.innerWidth;
+			canvas.height = window.innerHeight;
+
+			camera = new Camera(canvas);
+
+			canvas.addEventListener('mousemove',onMouseMove,false);
+			canvas.addEventListener('mousedown',onMouseDown,false);
+			canvas.addEventListener('mouseup',onMouseUp,false);
+			canvas.addEventListener('dblclick',onMouseDblClick,false);
+			document.addEventListener('keydown',onKeyDown,false);
+			document.addEventListener('keyup',onKeyUp,false);
+			//canvas.onwheel = onMouseWheel;
+			document.addEventListener('mousewheel',onMouseWheel,false);
+			canvas.focus();
+
+			onResize();
+		}
+
+		function onMouseMove(evt)
+		{
+			draw();
+		}
+
+		function onMouseDown(evt)
+		{
+			draw();
+		}
+
+		function onMouseUp(evt)
+		{
+			draw();
+		}
+
+		function onMouseDblClick(evt)
+		{
+			draw();
+		}
+
+		function onKeyDown(evt)
+		{
+			draw();
+		}
+
+		function onKeyUp(evt)
+		{
+			draw();
+		}
+
+		function onMouseDown(evt)
+		{
+			draw();
+		}
+
+		function onMouseWheel(evt)
+		{
+			draw();
+		}
+
+		function draw()
+		{
+			camera.clear();
+			camera.drawLine(new Vector(0,0,0), new Vector(1,0,0), "#FF0000", 1);
+			camera.drawLine(new Vector(0,0,0), new Vector(0,1,0), "#00FF00", 1);
+			camera.drawLine(new Vector(0,0,0), new Vector(0,0,1), "#0000FF", 1);
+			camera.drawTarget();
+
+			camera.drawCircle(new Vector(0,0,0), 1, new Vector(1,0,0), new Vector(0,0,1), "#00FF00", 1);
+
+			camera.drawQuad(new Vector(0,2.5,0), 6, 5, new Vector(1,0,0), new Vector(0,1,0), "rgba(0,255,0,1)", "rgba(0,255,0,0.3)", 1);
+
+			camera.drawCapsule(new Vector(0,5,0), 2, 1, new Vector(1,0,0), new Vector(0,0,1), "#00FF00", 1);
+		}
+
+	</script>
+</head>
+
+<body>
+
+	<canvas id = "mainCanvas" style = "position:fixed; left:0; top:0;"/>
+
+</body>
+
+<script>
+	setup();
+	draw();
+</script>
+
+</html>

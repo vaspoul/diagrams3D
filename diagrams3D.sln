@@ -1,0 +1,41 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.10.34928.147
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{E24C65DC-7377-472B-9ABA-BC803B73C61A}") = "diagrams3D", ".", "{AC86978E-E776-4EDE-AE64-9508F8B7B410}"
+	ProjectSection(WebsiteProperties) = preProject
+		TargetFrameworkMoniker = ".NETFramework,Version%3Dv4.0"
+		Debug.AspNetCompiler.VirtualPath = "/localhost_55911"
+		Debug.AspNetCompiler.PhysicalPath = "..\diagrams3D\"
+		Debug.AspNetCompiler.TargetPath = "PrecompiledWeb\localhost_55911\"
+		Debug.AspNetCompiler.Updateable = "true"
+		Debug.AspNetCompiler.ForceOverwrite = "true"
+		Debug.AspNetCompiler.FixedNames = "false"
+		Debug.AspNetCompiler.Debug = "True"
+		Release.AspNetCompiler.VirtualPath = "/localhost_55911"
+		Release.AspNetCompiler.PhysicalPath = "..\diagrams3D\"
+		Release.AspNetCompiler.TargetPath = "PrecompiledWeb\localhost_55911\"
+		Release.AspNetCompiler.Updateable = "true"
+		Release.AspNetCompiler.ForceOverwrite = "true"
+		Release.AspNetCompiler.FixedNames = "false"
+		Release.AspNetCompiler.Debug = "False"
+		VWDPort = "55911"
+		SlnRelativePath = "..\diagrams3D\"
+	EndProjectSection
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{AC86978E-E776-4EDE-AE64-9508F8B7B410}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AC86978E-E776-4EDE-AE64-9508F8B7B410}.Debug|Any CPU.Build.0 = Debug|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {0A337B68-602F-44D3-86EC-AC045278B758}
+	EndGlobalSection
+EndGlobal
