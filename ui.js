@@ -1159,6 +1159,86 @@ function ColorPicker(value, callback)
 	}
 }
 
+function UVPicker(u, v, callback)
+{
+	this.u = u;
+	this.v = v;
+
+	this.onChange = function()
+	{
+		callback(this.u, this.v);
+	}
+
+	this.copyFrom = function(other)
+	{
+		if (typeof(other) != typeof(this))
+			return;
+
+		this.u = other.u;
+		this.v = other.v;
+
+		callback(this.value);
+	};
+
+	this.draw = function()
+	{
+		this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
+		this.context.fillStyle = "#FFFFFF";
+		this.context.fillRect(0, 0, this.canvas.width, this.canvas.height);
+
+		this.context.fillStyle = "#000000";
+		this.context.fillRect( this.u * this.canvas.width - 2, this.v * this.canvas.height - 2, 4, 4 );
+
+		this.context.strokeStyle = "#AAAAAA";
+		this.context.beginPath();
+		this.context.moveTo(0, this.v * this.canvas.height);
+		this.context.lineTo(this.canvas.width, this.v * this.canvas.height);
+		this.context.moveTo(this.u * this.canvas.width, 0);
+		this.context.lineTo(this.u * this.canvas.width, this.canvas.height);
+
+		this.context.stroke();
+
+		this.context.moveto
+	}
+
+	this.addControls = function(parentElement)
+	{
+		var div = document.createElement("div");
+
+		this.canvas = document.createElement("canvas");
+		this.canvas.className = "toolbar";
+		this.canvas.height = 150;
+		this.canvas.width = 150;
+		this.canvas.style.border = "1px solid black";
+		this.canvas.onmousemove = function(evt) 
+		{ 
+			if (evt.buttons & 1)
+			{
+				this.u = (evt.clientX - this.canvas.getBoundingClientRect().left) / this.canvas.width; 
+				this.v = (evt.clientY - this.canvas.getBoundingClientRect().top) / this.canvas.height; 
+				callback(this.u, this.v); 
+				this.draw(); 
+			}
+		}.bind(this);
+
+		this.canvas.onmousedown	= function(evt) 
+		{ 
+			this.u = (evt.clientX - this.canvas.getBoundingClientRect().left) / this.canvas.width; 
+			this.v = (evt.clientY - this.canvas.getBoundingClientRect().top) / this.canvas.height; 
+			callback(this.u, this.v); 
+			this.draw(); 
+		}.bind(this);
+		
+		div.appendChild(this.canvas);
+		
+		this.context = this.canvas.getContext('2d');
+
+		this.draw();
+
+		parentElement.appendChild(div);
+	}
+}
+
 function TextBox(value, singleLine, perKeyCallback, maxLength, callback)
 {
 	var textArea;
