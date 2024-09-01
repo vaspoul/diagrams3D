@@ -192,7 +192,7 @@ function Camera(mainCanvas,  svg)
 		var p = new Array(8);
 
 		var tanY = Math.tan(fov * 0.5 * Math.PI / 180);
-		var tanX = tanY / aspect;
+		var tanX = tanY * aspect;
 
 		p[0] = mad(xAxis, -tanX * near, mad(yAxis, +tanY * near, mad(zAxis, near, o)));
 		p[1] = mad(xAxis, +tanX * near, mad(yAxis, +tanY * near, mad(zAxis, near, o)));

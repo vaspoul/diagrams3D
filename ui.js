@@ -1210,12 +1210,15 @@ function UVPicker(u, v, callback)
 		this.canvas.height = 150;
 		this.canvas.width = 150;
 		this.canvas.style.border = "1px solid black";
+		this.canvas.style.display = "inline";
+
 		this.canvas.onmousemove = function(evt) 
 		{ 
 			if (evt.buttons & 1)
 			{
 				this.u = (evt.clientX - this.canvas.getBoundingClientRect().left) / this.canvas.width; 
 				this.v = (evt.clientY - this.canvas.getBoundingClientRect().top) / this.canvas.height; 
+				this.text.innerHTML = this.u.toFixed(3).toString() + ", " + this.v.toFixed(3).toString();
 				callback(this.u, this.v); 
 				this.draw(); 
 			}
@@ -1229,7 +1232,11 @@ function UVPicker(u, v, callback)
 			this.draw(); 
 		}.bind(this);
 		
+		this.text = document.createElement("text");
+		this.text.innerHTML = this.u.toFixed(3).toString() + ", " + this.v.toFixed(3).toString();
+
 		div.appendChild(this.canvas);
+		div.appendChild(this.text);
 		
 		this.context = this.canvas.getContext('2d');
 
