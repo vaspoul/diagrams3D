@@ -207,7 +207,7 @@ function Graphics(canvas_, svg)
 		context.fill();
 	}
 
-	function drawText(O,text,color,align,angle,font)
+	this.drawText = function(x,y,text,color,align,angle,font)
 	{
 		if (typeof(color) === "undefined")
 			color = "#000000";
@@ -216,10 +216,10 @@ function Graphics(canvas_, svg)
 			align = "center";
 
 		if (font === undefined)
-			font = "bold 16px Arial";
+			font = "16px 'Arial'";
 
 
-		context.translate(O[0], O[1]);
+		context.translate(x, y);
 
 		if (angle !== undefined)
 		{
@@ -237,7 +237,7 @@ function Graphics(canvas_, svg)
 			context.rotate(angle);// * Math.PI / 180);
 		}
 
-		context.translate(-O[0], -O[1]);
+		context.translate(-x, -y);
 	}
 		
 	this.clear = function(color)
@@ -256,7 +256,7 @@ function Graphics(canvas_, svg)
 	{
 		if (font == undefined)
 		{
-			font = "16px 'Open Sans'";
+			font = "16px 'Arial'";
 		}
 
 		context.font = font;

@@ -1159,10 +1159,11 @@ function ColorPicker(value, callback)
 	}
 }
 
-function UVPicker(u, v, callback)
+function UVPicker(u, v, snap, callback)
 {
 	this.u = u;
 	this.v = v;
+	this.snap = snap;
 
 	this.onChange = function()
 	{
@@ -1218,6 +1219,13 @@ function UVPicker(u, v, callback)
 			{
 				this.u = (evt.clientX - this.canvas.getBoundingClientRect().left) / this.canvas.width; 
 				this.v = (evt.clientY - this.canvas.getBoundingClientRect().top) / this.canvas.height; 
+
+				if (this.snap>0 && !evt.altKey)
+				{
+					this.u = Math.round(this.u / this.snap) * this.snap;
+					this.v = Math.round(this.v / this.snap) * this.snap;
+				}
+
 				this.text.innerHTML = this.u.toFixed(3).toString() + ", " + this.v.toFixed(3).toString();
 				callback(this.u, this.v); 
 				this.draw(); 

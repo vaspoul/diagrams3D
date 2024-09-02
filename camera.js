@@ -13,6 +13,8 @@ function Camera(mainCanvas,  svg)
 	var aspect = canvasW / canvasH;
 	var near = 0.1;
 	var far = 1000;
+	var orthographic = false;
+	var autoOrtho = true;
 
 	var viewMtx = new Array(4);
 	var projMtx = new Array(4);
@@ -25,7 +27,47 @@ function Camera(mainCanvas,  svg)
 	canvas.addEventListener('keyup', onKeyUp, false);
 	canvas.onwheel = onMouseWheel;
 	canvas.oncontextmenu = onContextMenu;
+	this.setFOV = function(value)
+	{
+		FOV = value;
+		updateProjection();
+	}
 
+	this.getFOV = function()
+	{
+		return FOV;
+	}
+
+	function setOrthographic(value)
+	{
+		orthographic = value;
+
+		if (orthographic)
+		{
+			view_angleTheta = Math.round(view_angleTheta / orthoRotationSnap) * orthoRotationSnap;
+			view_anglePhi = Math.round(view_anglePhi / orthoRotationSnap) * orthoRotationSnap;
+		}
+
+		updateProjection();
+	}
+
+	this.setOrthographic = setOrthographic;
+
+	this.getOrthographic = function()
+	{
+		return orthographic;
+	}
+
+	this.setAutoOrtho = function(value)
+	{
+		autoOrtho = value;
+		updateProjection();
+	}
+
+	this.getAutoOrtho = function()
+	{
+		return autoOrtho;
+	}
 	this.onResize = function()
 	{
 		canvasW = canvas.width;
@@ -42,6 +84,22 @@ function Camera(mainCanvas,  svg)
 
 	function updateProjection()
 	{
+		if (autoOrtho)
+		{
+			var threshold = 5;
+
+			if ( !orthographic && Math.abs(view_angleTheta % 90) < threshold && Math.abs(view_anglePhi % 90) < threshold )
+			{
+				view_angleTheta = Math.round(view_angleTheta / 90) * 90;
+				view_anglePhi = Math.round(view_anglePhi / 90) * 90;
+				orthographic = true;
+			}
+			else if ( orthographic && (Math.abs(view_angleTheta % 90) > threshold || Math.abs(view_anglePhi % 90) > threshold) )
+			{
+				setOrthographic(false);
+			}
+		}
+
 		var cosX = Math.cos(view_angleTheta * Math.PI / 180);
 		var sinX = Math.sin(view_angleTheta * Math.PI / 180);
 		var cosY = Math.cos(view_anglePhi * Math.PI / 180);
@@ -57,15 +115,30 @@ function Camera(mainCanvas,  svg)
 		viewMtx[1] = [ y.x, y.y, y.z, -dot(view_position, y) ];
 		viewMtx[2] = [ z.x, z.y, z.z, -dot(view_position, z) ];
 
-		var yScale = 1 / Math.tan(FOV * Math.PI / 180 * 0.5);
-		var xScale = yScale / aspect;
-		var F = far;
-		var N = near;
+		if (orthographic)
+		{
+			var orthoHeight = Math.tan(FOV * 0.5 * Math.PI / 180) * 2 * view_distance;
+			var orthoWidth = orthoHeight * aspect;
+			var F = far;
+			var N = near;
 
-		projMtx[0] = [ xScale, 0, 0, 0 ];
-		projMtx[1] = [ 0, yScale, 0, 0 ];
-		projMtx[2] = [ 0, 0, F / (F-N),	-F*N / (F-N) ];
-		projMtx[3] = [ 0, 0, 1, 0 ];
+			projMtx[0] = [ 2 / orthoWidth, 0, 0, 0 ];
+			projMtx[1] = [ 0, 2 / orthoHeight, 0, 0 ];
+			projMtx[2] = [ 0, 0, 1 / (F-N),	-N / (F-N) ];
+			projMtx[3] = [ 0, 0, 0, 1 ];
+		}
+		else
+		{
+			var yScale = 1 / Math.tan(FOV * Math.PI / 180 * 0.5);
+			var xScale = yScale / aspect;
+			var F = far;
+			var N = near;
+
+			projMtx[0] = [ xScale, 0, 0, 0 ];
+			projMtx[1] = [ 0, yScale, 0, 0 ];
+			projMtx[2] = [ 0, 0, F / (F-N),	-F*N / (F-N) ];
+			projMtx[3] = [ 0, 0, 1, 0 ];
+		}
 	}
 
 	function transformP(v)
@@ -217,9 +290,19 @@ function Camera(mainCanvas,  svg)
 		return graphics.drawArrow(transformP(pStart), transformP(pEnd), sizeInPixels, color, width, dash);
 	}
 
-	this.drawText = function(O,text,color,align, angle, font)
+	this.drawText3D = function(O,text,color,align, angle, font)
 	{
-		return graphics.drawText(transformP(O),text,color,align,angle,font);
+		O = transformP(O);
+
+		return graphics.drawText(O[0], o[1], text,color,align,angle,font);
+	}
+
+	this.drawText2D = function(x,y,text,color,align, angle, font)
+	{
+		if (typeof(align) === "undefined")
+			align = "left";
+
+		return graphics.drawText(x,y,text,color,align,angle,font);
 	}
 
 	this.getMousePos = function(evt)
@@ -237,6 +320,7 @@ function Camera(mainCanvas,  svg)
 	var rotateSensitivity = 20;
 	var wheelSensitivity = 300;
 	var zoomSensitivity = 300;
+	var orthoRotationSnap = 5;
 
 	function onMouseMove(evt)
 	{
@@ -251,12 +335,19 @@ function Camera(mainCanvas,  svg)
 			view_angleTheta = angleThetaDragStart + deltaAngleY;
 			view_anglePhi = anglePhiDragStart + deltaAngleX;
 
+			if (orthographic)
+			{
+				view_angleTheta = Math.round(view_angleTheta / orthoRotationSnap) * orthoRotationSnap;
+				view_anglePhi = Math.round(view_anglePhi / orthoRotationSnap) * orthoRotationSnap;
+			}
+
 			updateProjection();
 		}
 		else if (evt.buttons & 4) // pan
 		{
-			var deltaX = -(evt.clientX - mousePosDragStart.x) / (canvasW / 2) * view_distance / projMtx[0][0];
-			var deltaY = (evt.clientY - mousePosDragStart.y) / (canvasH / 2) * view_distance / projMtx[1][1];
+			var depth = orthographic ? 1 : view_distance;
+			var deltaX = -(evt.clientX - mousePosDragStart.x) / (canvasW / 2) * depth / projMtx[0][0];
+			var deltaY = (evt.clientY - mousePosDragStart.y) / (canvasH / 2) * depth / projMtx[1][1];
 
 			var x = new Vector(viewMtx[0][0], viewMtx[0][1], viewMtx[0][2] );
 			var y = new Vector(viewMtx[1][0], viewMtx[1][1], viewMtx[1][2] );
