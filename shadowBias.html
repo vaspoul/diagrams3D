@@ -1,0 +1,197 @@
+<html>
+<head>
+	
+	<link href="styles.css" rel="stylesheet">
+
+	<script type = "text/javascript" src = "maths.js"></script>
+	<script type = "text/javascript" src = "graphics.js"></script>
+	<script type = "text/javascript" src = "camera.js"></script>
+	<script type = "text/javascript" src = "ui.js"></script>
+
+	<script>
+
+		var camera;
+		var surfacePosUV = { x:0.75, y:0.8 };
+		var surfaceNormalUV = { x:0.75, y:0.8 };
+		var avgOccluderDepth = 0.7;
+
+		window.addEventListener("resize",onResize);
+
+		function onResize() 
+		{
+			if(camera != undefined) 
+			{
+				canvas.width = window.innerWidth;
+				canvas.height = window.innerHeight;
+
+				camera.onResize();
+
+				draw();
+			}
+		}
+
+		function setup() 
+		{
+			canvas = document.getElementById("mainCanvas");
+			canvas.width = window.innerWidth;
+			canvas.height = window.innerHeight;
+
+			camera = new Camera(canvas);
+
+			camera.setView(-20, -40, new Vector(0, -5, 0), 10);
+
+			canvas.addEventListener('mousemove',onMouseMove,false);
+			canvas.addEventListener('mousedown',onMouseDown,false);
+			canvas.addEventListener('mouseup',onMouseUp,false);
+			canvas.addEventListener('dblclick',onMouseDblClick,false);
+			document.addEventListener('keydown',onKeyDown,false);
+			document.addEventListener('keyup',onKeyUp,false);
+			document.addEventListener('mousewheel',onMouseWheel,false);
+			canvas.focus();
+
+			var controls = new PropertyGrid(document.getElementById("controlsDock"));
+
+			
+			controls.addProperty("-- Camera --", new Divider());
+			controls.addProperty("Camera FOV", new Slider(0, 110, camera.getFOV(), 5, function (value) { camera.setFOV(value); draw(); }));
+			controls.addProperty("Camera Ortho", new TickBox(camera.getOrthographic(), function (value) { camera.setOrthographic(value); draw(); }));
+			controls.addProperty("Camera AutoOrtho", new TickBox(camera.getAutoOrtho(), function (value) { camera.setAutoOrtho(value); draw(); }));
+			controls.addProperty("-- Surface --", new Divider());
+			controls.addProperty("Pos", new UVPicker(surfacePosUV.x, surfacePosUV.y, 0.1, function(u,v) { surfacePosUV.x = u; surfacePosUV.y = v; draw(); }));
+			controls.addProperty("Normal", new UVPicker(surfaceNormalUV.x, surfaceNormalUV.y, 0.1, function(u,v) { surfaceNormalUV.x = u; surfaceNormalUV.y = v; draw(); }));
+
+			onResize();
+		}
+
+		function onMouseMove(evt)
+		{
+			draw();
+		}
+
+		function onMouseDown(evt)
+		{
+			draw();
+		}
+
+		function onMouseUp(evt)
+		{
+			draw();
+		}
+
+		function onMouseDblClick(evt)
+		{
+			draw();
+		}
+
+		function onKeyDown(evt)
+		{
+			draw();
+		}
+
+		function onKeyUp(evt)
+		{
+			draw();
+		}
+
+		function onMouseDown(evt)
+		{
+			draw();
+		}
+
+		function onMouseWheel(evt)
+		{
+			draw();
+		}
+
+		function draw()
+		{
+			var xAxis = new Vector(1,0,0);
+			var yAxis = new Vector(0,1,0);
+			var zAxis = new Vector(0,0,1);
+
+			camera.clear();
+
+			// General scene stuff
+			{
+				camera.drawLine(new Vector(0,0,0), xAxis, "#FF0000", 1);
+				camera.drawLine(new Vector(0,0,0), yAxis, "#00FF00", 1);
+				camera.drawLine(new Vector(0,0,0), zAxis, "#0000FF", 1);
+
+				camera.drawTarget();
+
+				camera.drawCircle(new Vector(0,0,0), 1, xAxis, zAxis, "#00FF00", 1);
+			}
+
+			var lightPos	= new Vector(0,0,0);
+			var lightDir	= yAxis.neg();
+			var lightPosFar	= mad(lightDir, 10, lightPos);
+			var texelSize	= 4;
+
+			var surfaceNormal	= new Vector(surfaceNormalUV.x * 2 - 1, 1, 1 - surfaceNormalUV.y * 2).norm();
+			var surfaceZ		= cross(surfaceNormal, yAxis).norm();
+			var surfaceX		= cross(surfaceNormal, surfaceZ).norm();
+			var surfacePosX		= (surfacePosUV.x * 2 - 1) * texelSize * 0.5;
+			var surfacePosZ		= (1 - surfacePosUV.y * 2) * texelSize * 0.5;
+			var surfacePos		= mad(xAxis, surfacePosX, mad(zAxis, surfacePosZ, mad(lightDir, 5, lightPos)));
+
+			// Draw texel
+			{
+				camera.drawQuad(lightPos, texelSize, texelSize, xAxis, zAxis, "#00FF00");
+
+				camera.drawLine(mad(xAxis, -texelSize*0.5, mad(zAxis, -texelSize*0.5, lightPos)), mad(xAxis, -texelSize*0.5, mad(zAxis, -texelSize*0.5, lightPosFar)), "#00FF00", 1, [5,5]); 
+				camera.drawLine(mad(xAxis, -texelSize*0.5, mad(zAxis, +texelSize*0.5, lightPos)), mad(xAxis, -texelSize*0.5, mad(zAxis, +texelSize*0.5, lightPosFar)), "#00FF00", 1, [5,5]); 
+				camera.drawLine(mad(xAxis, +texelSize*0.5, mad(zAxis, +texelSize*0.5, lightPos)), mad(xAxis, +texelSize*0.5, mad(zAxis, +texelSize*0.5, lightPosFar)), "#00FF00", 1, [5,5]); 
+				camera.drawLine(mad(xAxis, +texelSize*0.5, mad(zAxis, -texelSize*0.5, lightPos)), mad(xAxis, +texelSize*0.5, mad(zAxis, -texelSize*0.5, lightPosFar)), "#00FF00", 1, [5,5]); 
+
+				camera.drawLine(lightPos, lightPosFar, "#00FF00"); 
+
+				camera.drawQuad(lightPosFar, texelSize, texelSize, xAxis, zAxis, "#00FF00");
+			}
+
+			// Draw receiver
+			{
+				camera.drawQuad(mad(xAxis, -surfacePosX*0.5, mad(zAxis, -surfacePosZ*0.5, surfacePos)), surfacePosX, surfacePosZ, xAxis, zAxis, "#4287f5");
+				camera.drawPoint(surfacePos, "#4287f5");
+				camera.drawCircle(surfacePos, texelSize, surfaceX, surfaceZ, "#4287f5", 1, "rgba(150, 185, 242, 0.5)");
+
+				camera.drawArrow(surfacePos, mad(surfaceNormal, 1, surfacePos), 10, "#009000");
+				camera.drawArrow(surfacePos, mad(mul(surfaceNormal, new Vector(1,0,0)), 1, surfacePos), 10, "#00C000");
+				camera.drawArrow(surfacePos, mad(mul(surfaceNormal, new Vector(0,0,1)), 1, surfacePos), 10, "#00C000");
+				camera.drawLine(mad(surfaceNormal, 1, surfacePos), mad(mul(surfaceNormal, new Vector(1,0,1)), 1, surfacePos), "#00C000");
+				camera.drawLine(mad(mul(surfaceNormal, new Vector(1,0,0)), 1, surfacePos), mad(mul(surfaceNormal, new Vector(1,0,1)), 1, surfacePos), "#00C000");
+				camera.drawLine(mad(mul(surfaceNormal, new Vector(0,0,1)), 1, surfacePos), mad(mul(surfaceNormal, new Vector(1,0,1)), 1, surfacePos), "#00C000");
+				
+				camera.drawArrow(surfacePos, mad(surfaceX, 1, surfacePos), 10, "#FF0000");
+				camera.drawLine(surfacePos, mad(surfaceX, -texelSize, surfacePos), "#FF0000", 1, [5,5]);
+
+				camera.drawArrow(surfacePos, mad(surfaceZ, 1, surfacePos), 10, "#0000FF");
+			}
+		}
+
+	</script>
+</head>
+
+<body>
+
+	<div>
+	<canvas id = "mainCanvas" style = "position:fixed; left:0; top:0;"/>
+	</div>
+
+	<div id="controlsDock" class="toolbar" style="	top:8px;
+								position:fixed;
+								right:8px;
+								width:330px;
+								padding:0 5px;
+								border:1px solid #DDDDDD;
+								box-shadow:3px 3px 5px #999999;
+								text-align:left;">
+	<center>Controls</center>
+	</div>
+</body>
+
+<script>
+	setup();
+	draw();
+</script>
+
+</html>

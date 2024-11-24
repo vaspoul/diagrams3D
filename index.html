@@ -13,6 +13,9 @@
 		var camera;
 		var bulbRadius = 1;
 		var bulbLength = 2;
+		var bulbFOV = 90;
+		var receiverUV = { x:0.75, y:0.8 };
+		var avgOccluderDepth = 0.7;
 
 		window.addEventListener("resize",onResize);
 
@@ -48,8 +51,17 @@
 
 			var controls = new PropertyGrid(document.getElementById("controlsDock"));
 
+			
+			controls.addProperty("-- Camera --", new Divider());
+			controls.addProperty("Camera FOV", new Slider(0, 110, camera.getFOV(), 5, function (value) { camera.setFOV(value); draw(); }));
+			controls.addProperty("Camera Ortho", new TickBox(camera.getOrthographic(), function (value) { camera.setOrthographic(value); draw(); }));
+			controls.addProperty("Camera AutoOrtho", new TickBox(camera.getAutoOrtho(), function (value) { camera.setAutoOrtho(value); draw(); }));
+			controls.addProperty("-- Light --", new Divider());
 			controls.addProperty("Bulb Radius", new Slider(0, 4, bulbRadius, 0.1, function(value) { bulbRadius = value; draw(); }));
 			controls.addProperty("Bulb Length", new Slider(0, 10, bulbLength, 0.1, function(value) { bulbLength = value; draw(); }));
+			controls.addProperty("FOV", new Slider(0, 180, bulbFOV, 5, function(value) { bulbFOV = value; draw(); }));
+			controls.addProperty("UV", new UVPicker(receiverUV.x, receiverUV.y, 0.1, function(u,v) { receiverUV.x = u; receiverUV.y = v; draw(); }));
+			controls.addProperty("Avg Occ Depth", new Slider(0, 1, avgOccluderDepth, 0.05, function(value) { avgOccluderDepth = value; draw(); }));
 
 			onResize();
 		}
@@ -96,20 +108,137 @@
 
 		function draw()
 		{
+			var xAxis = new Vector(1,0,0);
+			var yAxis = new Vector(0,1,0);
+			var zAxis = new Vector(0,0,1);
+
 			camera.clear();
-			camera.drawLine(new Vector(0,0,0), new Vector(1,0,0), "#FF0000", 1);
-			camera.drawLine(new Vector(0,0,0), new Vector(0,1,0), "#00FF00", 1);
-			camera.drawLine(new Vector(0,0,0), new Vector(0,0,1), "#0000FF", 1);
 
-			camera.drawTarget();
+			// General scene stuff
+			{
+				camera.drawLine(new Vector(0,0,0), xAxis, "#FF0000", 1);
+				camera.drawLine(new Vector(0,0,0), yAxis, "#00FF00", 1);
+				camera.drawLine(new Vector(0,0,0), zAxis, "#0000FF", 1);
 
-			camera.drawCircle(new Vector(0,0,0), 1, new Vector(1,0,0), new Vector(0,0,1), "#00FF00", 1);
+				camera.drawTarget();
 
-			camera.drawQuad(new Vector(0,2.5,0), 6, 5, new Vector(1,0,0), new Vector(0,1,0), "rgba(0,255,0,1)", "rgba(0,255,0,0.3)", 1);
+				camera.drawCircle(new Vector(0,0,0), 1, xAxis, zAxis, "#00FF00", 1);
+			}
 
-			camera.drawCapsule(new Vector(0,5,0), bulbLength*0.5, bulbRadius, new Vector(1,0,0), new Vector(0,0,1), "#00FF00", 1);
+			var lightDir	= yAxis.neg();
+			var aspectRatio = (bulbRadius + bulbLength * 0.5) / bulbRadius;
+			var tanZ		= Math.tan(bulbFOV * 0.5 * Math.PI / 180);
+			var tanX		= tanZ * aspectRatio;
+			var pullBack	= (bulbRadius + bulbLength * 0.5) / tanX;
+			var near		= pullBack;
+			var far			= 5 + pullBack;
+			var center		= new Vector(0, far-near, 0);
+			var apex		= mad(yAxis, pullBack, center);
 
-			camera.drawFrustum(new Vector(0,5+3,0), 90, 3, 3, 5+3, new Vector(0,0,-1), new Vector(1,0,0), new Vector(0,-1,0), "#00FF00");
+			var receiverNDC = { x: receiverUV.x * 2 - 1, y: 1 - receiverUV.y * 2 };
+			var receiverFarWS = mad(xAxis, tanX * far * receiverNDC.x, mad(zAxis, tanZ * far * receiverNDC.y, mad(lightDir, far, apex)));
+			var receiverNearWS = mad(xAxis, tanX * near * receiverNDC.x, mad(zAxis, tanZ * near * receiverNDC.y, mad(lightDir, near, apex)));
+
+			var avgOccluderWS = mad(xAxis, tanX * lerp(near, far, avgOccluderDepth) * (receiverUV.x-0.5) * 2, mad(zAxis, tanZ * lerp(near, far, avgOccluderDepth) * (receiverUV.y-0.5) * -2, mad(lightDir, lerp(near, far, avgOccluderDepth), apex)));
+
+			// Draw light
+			{
+				camera.drawCapsule(new Vector(0,5,0), bulbLength*0.5, bulbRadius, xAxis, zAxis, "#00FF00", 1);
+				camera.drawPoint(center, "#808080");
+				camera.drawArrow(center, mad(zAxis, bulbRadius, center), 10, "#0000FF");
+				camera.drawArrow(center, mad(xAxis, bulbLength * 0.5 + bulbRadius, center), 10, "#FF0000");
+				camera.drawFrustum(apex, bulbFOV, aspectRatio, 0.001, near, xAxis, zAxis, lightDir, "#AAAAAA");
+				camera.drawFrustum(apex, bulbFOV, aspectRatio, near, far, xAxis, zAxis, lightDir, "#00FF00");
+			}
+
+			// Draw receiver
+			{
+				camera.drawLine(receiverNearWS, receiverFarWS, "#0000BB", 1);
+				camera.drawPoint(receiverFarWS, "#0000BB");
+				camera.drawPoint(receiverNearWS, "#0000BB");
+			}
+
+			// Draw average occluder point
+			{
+				camera.drawPoint(avgOccluderWS, "#FF0000");
+			}
+
+			// Project bulb ellipse to far plane
+			{
+				p = mad(xAxis, bulbRadius + bulbLength * 0.5, center);
+				dir = normalize(sub(avgOccluderWS, p));
+				qMinX = mad(dir, (far - near) / -dir.y, p);
+				camera.drawArrow(p, qMinX, 10, "#BBBBBB", 1);
+
+				p = mad(xAxis, -(bulbRadius + bulbLength * 0.5), center);
+				dir = normalize(sub(avgOccluderWS, p));
+				qMaxX = mad(dir, (far - near) / -dir.y, p);
+				camera.drawArrow(p, qMaxX, 10, "#BBBBBB", 1);
+
+				p = mad(zAxis, bulbRadius, center);
+				dir = normalize(sub(avgOccluderWS, p));
+				qMinZ = mad(dir, (far - near) / -dir.y, p);
+				camera.drawArrow(p, qMinZ, 10, "#BBBBBB", 1);
+
+				p = mad(zAxis, -bulbRadius, center);
+				dir = normalize(sub(avgOccluderWS, p));
+				qMaxZ = mad(dir, (far - near) / -dir.y, p);
+				camera.drawArrow(p, qMaxZ, 10, "#BBBBBB", 1);
+
+				camera.drawCircle(avg(qMinX, qMaxX), 1, mul(sub(qMaxX, qMinX), 0.5), mul(sub(qMaxZ, qMinZ), 0.5), "#80FF80");
+			}
+
+			// Back-project ellipse to near plane
+			{
+				dir = normalize(sub(apex, qMinX));
+				qMinXNear = mad(dir, (far - near) / dir.y, qMinX);
+				camera.drawArrow(qMinX, qMinXNear, 10, "rgba(255,0,255,0.3)", 1);
+
+				dir = normalize(sub(apex, qMaxX));
+				qMaxXNear = mad(dir, (far - near) / dir.y, qMaxX);
+				camera.drawArrow(qMaxX, qMaxXNear, 10, "rgba(255,0,255,0.3)", 1);
+
+				dir = normalize(sub(apex, qMinZ));
+				qMinZNear = mad(dir, (far - near) / dir.y, qMinZ);
+				camera.drawArrow(qMinZ, qMinZNear, 10, "rgba(255,0,255,0.3)", 1);
+
+				dir = normalize(sub(apex, qMaxZ));
+				qMaxZNear = mad(dir, (far - near) / dir.y, qMaxZ);
+				camera.drawArrow(qMaxZ, qMaxZNear, 10, "rgba(255,0,255,0.3)", 1);
+
+				camera.drawCircle(avg(qMinXNear, qMaxXNear), 1, mul(sub(qMaxXNear, qMinXNear), 0.5), mul(sub(qMaxZNear, qMinZNear), 0.5), "rgba(255,0,255,1)");
+			}
+
+			// Simplified calculations
+			{
+				var occluderRatio = (1 - avgOccluderDepth) / avgOccluderDepth;
+
+				var radiusZFar = occluderRatio * bulbRadius;
+				var radiusXFar = radiusZFar * aspectRatio;
+				var offsetZFar = occluderRatio * bulbRadius * receiverNDC.y;
+				var offsetXFar = occluderRatio * bulbRadius * aspectRatio * receiverNDC.x;
+
+				camera.drawQuad( mad(xAxis, offsetXFar, mad(zAxis, offsetZFar, receiverFarWS)), radiusXFar * 2, radiusZFar * 2, xAxis, zAxis, "#FF00FF", undefined, 1, [5,5] );
+
+				var depthRatio = near / far;
+				var radiusZNear = depthRatio * radiusZFar;
+				var radiusXNear = depthRatio * radiusXFar;
+				var offsetZNear = depthRatio * offsetZFar;
+				var offsetXNear = depthRatio * offsetXFar;
+
+				camera.drawQuad( mad(xAxis, offsetXNear, mad(zAxis, offsetZNear, receiverNearWS)), radiusXNear * 2, radiusZNear * 2, xAxis, zAxis, "#FF00FF", undefined, 1, [5,5] );
+			}
+
+			// Legend
+			{
+				var y = 20;
+				var dy = camera.getGraphics().measureText("M").y * 1.5;
+
+				camera.drawText2D(10, y, "1. [Blue Line] receiver"); y += dy;
+				camera.drawText2D(10, y, "2. [Grey Lines] project bulb ellipse to far plane"); y += dy;
+				camera.drawText2D(10, y, "3. [Pink Lines] project bulb ellipse back to near plane"); y += dy;
+				camera.drawText2D(10, y, "4. [Dashed Lines] simplified calculations"); y += dy;
+			}
 		}
 
 	</script>

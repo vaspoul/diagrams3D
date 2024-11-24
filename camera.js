@@ -27,6 +27,7 @@ function Camera(mainCanvas,  svg)
 	canvas.addEventListener('keyup', onKeyUp, false);
 	canvas.onwheel = onMouseWheel;
 	canvas.oncontextmenu = onContextMenu;
+
 	this.setFOV = function(value)
 	{
 		FOV = value;
@@ -68,6 +69,17 @@ function Camera(mainCanvas,  svg)
 	{
 		return autoOrtho;
 	}
+
+	this.setView = function(anglePhi, angleTheta, target, distance)
+	{
+		view_anglePhi		= (anglePhi == undefined)	? view_anglePhi		: anglePhi;
+		view_angleTheta		= (angleTheta == undefined) ? view_angleTheta	: angleTheta;
+		view_target			= (target == undefined)		? view_target		: target;
+		view_distance		= (distance == undefined)	? view_distance		: distance;
+
+		updateProjection();
+	}
+
 	this.onResize = function()
 	{
 		canvasW = canvas.width;
@@ -233,10 +245,10 @@ function Camera(mainCanvas,  svg)
 			var angle = (i/segments) * Math.PI * 2;
 			var cosAngle = Math.cos(angle);
 			var sinAngle = Math.sin(angle);
-			points[i] = mad(xAxis, cosAngle * radius, mad(yAxis, sinAngle, p));
+			points[i] = mad(xAxis, cosAngle * radius, mad(yAxis, sinAngle * radius, p));
 		}
 
-		return this.drawLineStrip(points, true, color, width, dash, fillColor);
+		return this.drawLineStrip(points, true, color, width, fillColor, dash);
 	}
 
 	this.drawCapsule = function(p, halfLength, radius, longAxis, shortAxis, color, width, fillColor, segments, dash)
