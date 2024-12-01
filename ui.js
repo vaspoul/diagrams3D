@@ -47,8 +47,13 @@ function rgba2html(r, g, b, a)
     return "rgba(" + r + ", " + g + ", " + b + ", " + a + ")";
 }
 
-function parseColor(colorStr) 
+function parseColor(colorStr, unorm) 
 {
+	var rgb;
+
+	if (unorm == undefined)
+		unorm = true;
+
 	// From https://stackoverflow.com/questions/11068240/what-is-the-most-efficient-way-to-parse-a-css-color-in-javascript
 	if (colorStr.substr(0,1)=="#") 
 	{
@@ -56,18 +61,26 @@ function parseColor(colorStr)
 
 		var factors = [17,1,0.062272][collen-1];
 
-		return {
-					r: Math.round(parseInt(colorStr.substr(1, collen), 16) * factors),
-					g: Math.round(parseInt(colorStr.substr(1+collen, collen), 16 ) * factors),
-					b: Math.round(parseInt(colorStr.substr(1+2*collen, collen), 16) * factors)
-				};
+		rgb = [	Math.round(parseInt(colorStr.substr(1, collen), 16) * factors),
+				Math.round(parseInt(colorStr.substr(1+collen, collen), 16 ) * factors),
+				Math.round(parseInt(colorStr.substr(1+2*collen, collen), 16) * factors),
+				1 ];
 	}
 	else
 	{
-		var rgb = colorStr.split("(")[1].split(")")[0].split(",").map(Math.round);
+		var rgb = colorStr.split("(")[1].split(")")[0].split(",");//.map(Math.round);
 
-		return { r: rgb[0], g: rgb[1], b: rgb[2], a: rgb.length==4 ? rgb[3] : undefined };
+		rgb = [ Math.round(rgb[0]), Math.round(rgb[1]), Math.round(rgb[2]), rgb.length==4 ? rgb[3] : 1 ];
 	}
+
+	if (unorm)
+	{
+		rgb[0] /= 255;
+		rgb[1] /= 255;
+		rgb[2] /= 255;
+	}
+
+	return rgb;
 }
 
 function ShortcutSystem()

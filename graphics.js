@@ -1,10 +1,102 @@
-function Graphics(canvas_, svg)
+function Graphics(canvas_)
 {
 	var canvas = canvas_;
 	var canvasW = canvas.width;
 	var canvasH = canvas.height;
+
+	var canvas2D = document.createElement('canvas');
+	canvas2D.width = canvas.width;
+	canvas2D.height = canvas.height;
+	canvas2D.style.position = canvas.style.position;
+	canvas2D.style.left = canvas.style.left;
+	canvas2D.style.top = canvas.style.top;
+	canvas2D.style.zIndex = canvas.style.zIndex+1;
+	canvas2D.style.cursor = "none";
+	canvas2D.tabIndex = -1;
+	if (canvas.parentNode != undefined)
+	{
+		canvas.parentNode.insertBefore(canvas2D, canvas);
+	}
+
 	var canvasAspect = canvasW / canvasH;
-	var context = (svg==true) ? new C2S(canvasW, canvasH) : canvas_.getContext('2d');
+	var context = canvas2D.getContext('2d');
+	var gl = canvas_.getContext('webgl');
+	var defaultShader;
+	var vertexBuffer;
+	var vsPositionLoc;
+	var vsViewProjMtxLoc;
+	var psColorLoc;
+
+	function compileShader(gl, type, source) 
+	{
+		var shader = gl.createShader(type);
+		gl.shaderSource(shader, source);
+		gl.compileShader(shader);
+
+		if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) 
+		{
+			console.error("Shader compilation failed:", gl.getShaderInfoLog(shader));
+			gl.deleteShader(shader);
+			return null;
+		}
+
+		return shader;
+	}
+
+	function setup()
+	{
+
+		defaultShader = (function()
+		{
+			const vsCode = `
+				attribute	vec3 ATTRIB_Position;
+				uniform		mat4 g_viewProjMtx;
+			
+				void main() 
+				{
+					gl_Position = g_viewProjMtx * vec4(ATTRIB_Position, 1.0);
+				}`;
+
+			const psCode = `
+				precision mediump float;
+			
+				uniform vec4 g_color;
+
+				void main() 
+				{
+					gl_FragColor = g_color;
+				}`;
+
+			const vertexShader = compileShader(gl, gl.VERTEX_SHADER, vsCode);
+			const fragmentShader = compileShader(gl, gl.FRAGMENT_SHADER, psCode);
+	
+			const program = gl.createProgram();
+			gl.attachShader(program, vertexShader);
+			gl.attachShader(program, fragmentShader);
+			gl.linkProgram(program);
+
+			if (!gl.getProgramParameter(program, gl.LINK_STATUS)) 
+			{
+				console.error("Program linking failed:", gl.getProgramInfoLog(program));
+			}
+
+			return program;
+		})();
+
+		vertexBuffer		= gl.createBuffer();
+
+		gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
+		gl.bufferData(gl.ARRAY_BUFFER, 4096*3*4, gl.DYNAMIC_DRAW);
+
+		vsPositionLoc		= gl.getAttribLocation(defaultShader, "ATTRIB_Position");
+		vsViewProjMtxLoc	= gl.getUniformLocation(defaultShader, "g_viewProjMtx");
+		psColorLoc			= gl.getUniformLocation(defaultShader, "g_color");
+	}
+
+	this.setViewProjMtx = function(viewProjMtx)
+	{
+		gl.uniformMatrix4fv(vsViewProjMtxLoc, false, viewProjMtx);
+	}
 
 	this.getContext = function()
 	{
@@ -13,45 +105,16 @@ function Graphics(canvas_, svg)
 
 	this.onResize = function()
 	{
-		context = canvas.getContext('2d');
+		context = canvas2D.getContext('2d');
+		gl = canvas_.getContext('webgl');
 		canvasW = canvas.width;
 		canvasH = canvas.height;
 		canvasAspect = canvasW / canvasH;
+
+		canvas2D.width = canvas.width;
+		canvas2D.height = canvas.height;
 	}
-
-	//function clipLine(a,b)
-	//{
-	//	if (a[3] > b[3])
-	//		return clipLine(b,a);
-
-	//	if (b[2] <= 0)
-	//		return [];
-
-	//	if (a[2] >= 1)
-	//		return [];
-
-	//	if (a[2] >= 0 && b[2] <= 1)
-	//		return [a,b];
-
-	//	var vA = new Vector(a);
-	//	var vB = new Vector(b);
-	//	var delta = sub(vB, vA);
-
-	//	var zA = a[3];
-	//	var zB = b[3];
-	//	var deltaZ = zB - zA;
-	//	var p0;
-	//	var p1;
-
-	//	if (zA<0)		p0 = mad(delta, -zA/deltaZ, vA);
-	//	else			p0 = vA;
-
-	//	if (zB>1)		p1 = mad(delta, (1-zA)/deltaZ, vA);
-	//	else			p1 = vB;
-		
-	//	return [ [p0.x, p0.y, p0.z, 0], [p1.x, p1.y, p1.z, 1] ];
-	//}
-
+	
 	this.drawLine = function(a,b,color,width,dash)
 	{
 		if (typeof(color) === "undefined")
@@ -63,17 +126,14 @@ function Graphics(canvas_, svg)
 		if (typeof(dash) === "undefined")
 			dash = [];
 
-		context.lineWidth = width;
-		context.strokeStyle = color;
-		context.setLineDash(dash);
-
-		context.beginPath();
-		context.moveTo(a[0],a[1]);
-		context.lineTo(b[0],b[1]);
+		gl.uniform4f(psColorLoc, ...color);
 
 		if (width > 0)
 		{
-			context.stroke();
+			gl.lineWidth(width);
+			var points = new Float32Array([a.x, a.y, a.z, b.x, b.y, b.z]);
+			gl.bufferSubData(gl.ARRAY_BUFFER, 0, points);
+			gl.drawArrays(gl.LINES, 0, 2);
 		}
 	}
 	
@@ -91,33 +151,36 @@ function Graphics(canvas_, svg)
 		if (typeof(dash) === "undefined")
 			dash = [];
 
-		context.lineWidth = width;
-		context.strokeStyle = color;
-		context.setLineDash(dash);
+		var glPoints = new Float32Array((points.length + (closed ? 1 : 0)) * 3);
 
-		context.beginPath();
-		context.moveTo(points[0][0], points[0][1]);
-
-		for (var i = 1; i != points.length; ++i)
+		for (var i = 0; i < points.length; ++i)
 		{
-			context.lineTo(points[i][0], points[i][1]);
+			glPoints[i*3 + 0] = points[i].x;
+			glPoints[i*3 + 1] = points[i].y;
+			glPoints[i*3 + 2] = points[i].z;
 		}
 
 		if (closed)
 		{
-			context.lineTo(points[0][0], points[0][1]);
-		}
-
-		if (fillColor !== undefined)
-		{
-			context.fillStyle = fillColor;
-			context.fill();
+			glPoints[points.length * 3 + 0] = points[0].x;
+			glPoints[points.length * 3 + 1] = points[0].y;
+			glPoints[points.length * 3 + 2] = points[0].z;
 		}
 
 		if (width > 0)
 		{
-			context.stroke();
+			gl.uniform4f(psColorLoc, ...color);
+
+			gl.lineWidth(width);
+			gl.bufferSubData(gl.ARRAY_BUFFER, 0, glPoints);
+			gl.drawArrays(gl.LINE_STRIP, 0, glPoints.length/3);
 		}
+
+	//	if (fillColor !== undefined)
+	//	{
+	//		context.fillStyle = fillColor;
+	//		context.fill();
+	//	}
 	}
 
 	this.drawLines = function(points, color, width, dash, fillColor)
@@ -134,9 +197,9 @@ function Graphics(canvas_, svg)
 		if (typeof(dash) === "undefined")
 			dash = [];
 
-		context.lineWidth = width;
-		context.strokeStyle = color;
-		context.setLineDash(dash);
+		//context.lineWidth = width;
+		//context.strokeStyle = color;
+		//context.setLineDash(dash);
 
 		context.beginPath();
 
@@ -158,6 +221,51 @@ function Graphics(canvas_, svg)
 		}
 	}
 
+	this.drawTriangle = function(p0, p1, p2, color, fillColor, width, dash)
+	{
+		if (typeof(color) === "undefined")
+			color = "#000000";
+
+		if (typeof(width) === "undefined")
+			width = 1;
+
+		if (typeof(dash) === "undefined")
+			dash = [];
+
+		var glPoints = new Float32Array(3 * 3);
+		
+		glPoints[0*3 + 0] = p0.x;
+		glPoints[0*3 + 1] = p0.y;
+		glPoints[0*3 + 2] = p0.z;
+
+		glPoints[1*3 + 0] = p1.x;
+		glPoints[1*3 + 1] = p1.y;
+		glPoints[1*3 + 2] = p1.z;
+
+		glPoints[2*3 + 0] = p2.x;
+		glPoints[2*3 + 1] = p2.y;
+		glPoints[2*3 + 2] = p2.z;
+
+		gl.bufferSubData(gl.ARRAY_BUFFER, 0, glPoints);
+
+		if (fillColor != undefined)
+		{
+			gl.uniform4f(psColorLoc, ...fillColor);
+
+			//gl.depthMask(fillColor[3]>=1);
+
+			gl.drawArrays(gl.TRIANGLE_STRIP, 0, 3);
+		}
+
+		if (width > 0)
+		{
+			gl.uniform4f(psColorLoc, ...color);
+
+			gl.lineWidth(width);
+			gl.drawArrays(gl.LINE_LOOP, 0, 3);
+		}
+	}
+
 	this.drawArrow = function(pStart,pEnd,sizeInPixels, color,width,dash)
 	{
 		if (typeof(color) === "undefined")
@@ -172,6 +280,16 @@ function Graphics(canvas_, svg)
 		if (sizeInPixels == undefined)
 			sizeInPixels = 20;
 
+		var glPoints = new Float32Array(2 * 3);
+		
+		glPoints[0*3 + 0] = pStart.x;
+		glPoints[0*3 + 1] = pStart.y;
+		glPoints[0*3 + 2] = pStart.z;
+
+		glPoints[1*3 + 0] = pEnd.x;
+		glPoints[1*3 + 1] = pEnd.y;
+		glPoints[1*3 + 2] = pEnd.z;
+
 		pStart = new Vector(pStart[0], pStart[1], 0);
 		pEnd = new Vector(pEnd[0], pEnd[1], 0);
 
@@ -184,10 +302,10 @@ function Graphics(canvas_, svg)
 		var P0 = add(B, mul(T, 5*sizeInPixels/20 + width/2));
 		var P1 = add(B, mul(T, -5*sizeInPixels/20 - width/2));
 
-		context.lineWidth = width;
-		context.strokeStyle = color;
+		//context.lineWidth = width;
+		//context.strokeStyle = color;
 		context.fillStyle = color;
-		context.setLineDash(dash);
+		//context.setLineDash(dash);
 
 		// Line
 		context.beginPath();
@@ -197,8 +315,8 @@ function Graphics(canvas_, svg)
 
 		// Arrow head
 		context.beginPath();
-		context.lineWidth = 1;
-		context.setLineDash([]);
+		//context.lineWidth = 1;
+		//context.setLineDash([]);
 		context.moveTo(E.x, E.y);
 		context.lineTo(P0.x, P0.y);
 		context.lineTo(P1.x, P1.y);
@@ -244,12 +362,26 @@ function Graphics(canvas_, svg)
 	{
 		if (color == undefined)
 		{
-			color = "rgba(255,255,255,1)";
+			color = [1,1,1,1];
 		}
-
+		
 		context.clearRect(0,0,canvasW,canvasH);
-		context.fillStyle = color;
-		context.fillRect(0,0,canvasW,canvasH);
+
+		gl.viewport(0, 0, canvas.width, canvas.height);
+
+		gl.clearColor(...color);
+		gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+		gl.enable(gl.DEPTH_TEST);
+		gl.depthFunc(gl.LEQUAL); 
+		gl.depthMask(true);
+		
+		gl.disable(gl.CULL_FACE);
+
+		gl.useProgram(defaultShader);
+		gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
+		gl.enableVertexAttribArray(vsPositionLoc);
+		gl.vertexAttribPointer(vsPositionLoc, 3, gl.FLOAT, false, 0, 0);
 	}
 	
 	this.measureText = function(text, font)
@@ -268,4 +400,6 @@ function Graphics(canvas_, svg)
 		
 		return p;
 	}
+
+	setup();
 }

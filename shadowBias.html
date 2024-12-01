@@ -113,13 +113,13 @@
 
 			// General scene stuff
 			{
-				camera.drawLine(new Vector(0,0,0), xAxis, "#FF0000", 1);
-				camera.drawLine(new Vector(0,0,0), yAxis, "#00FF00", 1);
-				camera.drawLine(new Vector(0,0,0), zAxis, "#0000FF", 1);
+				camera.drawLine(new Vector(0,0,0), xAxis, [1,0,0,1], 1);
+				camera.drawLine(new Vector(0,0,0), yAxis, [0,1,0,1], 1);
+				camera.drawLine(new Vector(0,0,0), zAxis, [0,0,1,1], 1);
 
 				camera.drawTarget();
 
-				camera.drawCircle(new Vector(0,0,0), 1, xAxis, zAxis, "#00FF00", 1);
+				camera.drawCircle(new Vector(0,0,0), 1, xAxis, zAxis, [0,1,0,1], 1);
 			}
 
 			var lightPos	= new Vector(0,0,0);
@@ -136,40 +136,43 @@
 
 			// Draw texel
 			{
-				camera.drawQuad(lightPos, texelSize, texelSize, xAxis, zAxis, "#00FF00");
+				camera.drawQuad(lightPos, texelSize, texelSize, xAxis, zAxis, [0,1,0,1]);
 
-				camera.drawLine(mad(xAxis, -texelSize*0.5, mad(zAxis, -texelSize*0.5, lightPos)), mad(xAxis, -texelSize*0.5, mad(zAxis, -texelSize*0.5, lightPosFar)), "#00FF00", 1, [5,5]); 
-				camera.drawLine(mad(xAxis, -texelSize*0.5, mad(zAxis, +texelSize*0.5, lightPos)), mad(xAxis, -texelSize*0.5, mad(zAxis, +texelSize*0.5, lightPosFar)), "#00FF00", 1, [5,5]); 
-				camera.drawLine(mad(xAxis, +texelSize*0.5, mad(zAxis, +texelSize*0.5, lightPos)), mad(xAxis, +texelSize*0.5, mad(zAxis, +texelSize*0.5, lightPosFar)), "#00FF00", 1, [5,5]); 
-				camera.drawLine(mad(xAxis, +texelSize*0.5, mad(zAxis, -texelSize*0.5, lightPos)), mad(xAxis, +texelSize*0.5, mad(zAxis, -texelSize*0.5, lightPosFar)), "#00FF00", 1, [5,5]); 
+				camera.drawLine(mad(xAxis, -texelSize*0.5, mad(zAxis, -texelSize*0.5, lightPos)), mad(xAxis, -texelSize*0.5, mad(zAxis, -texelSize*0.5, lightPosFar)), [0,1,0,1], 1, [5,5]); 
+				camera.drawLine(mad(xAxis, -texelSize*0.5, mad(zAxis, +texelSize*0.5, lightPos)), mad(xAxis, -texelSize*0.5, mad(zAxis, +texelSize*0.5, lightPosFar)), [0,1,0,1], 1, [5,5]); 
+				camera.drawLine(mad(xAxis, +texelSize*0.5, mad(zAxis, +texelSize*0.5, lightPos)), mad(xAxis, +texelSize*0.5, mad(zAxis, +texelSize*0.5, lightPosFar)), [0,1,0,1], 1, [5,5]); 
+				camera.drawLine(mad(xAxis, +texelSize*0.5, mad(zAxis, -texelSize*0.5, lightPos)), mad(xAxis, +texelSize*0.5, mad(zAxis, -texelSize*0.5, lightPosFar)), [0,1,0,1], 1, [5,5]); 
 
-				camera.drawLine(lightPos, lightPosFar, "#00FF00"); 
+				camera.drawLine(lightPos, lightPosFar, [0,1,0,1]); 
 
-				camera.drawQuad(lightPosFar, texelSize, texelSize, xAxis, zAxis, "#00FF00");
+				camera.drawQuad(lightPosFar, texelSize, texelSize, xAxis, zAxis, [0,1,0,1]);
 			}
 
 			// Draw receiver
 			{
-				camera.drawQuad(mad(xAxis, -surfacePosX*0.5, mad(zAxis, -surfacePosZ*0.5, surfacePos)), surfacePosX, surfacePosZ, xAxis, zAxis, "#4287f5");
-				camera.drawPoint(surfacePos, "#4287f5");
-				camera.drawCircle(surfacePos, texelSize, surfaceX, surfaceZ, "#4287f5", 1, "rgba(150, 185, 242, 0.5)");
+				camera.drawQuad(mad(xAxis, -surfacePosX*0.5, mad(zAxis, -surfacePosZ*0.5, surfacePos)), surfacePosX, surfacePosZ, xAxis, zAxis, parseColor("#4287f5"));
+				camera.drawPoint(surfacePos, parseColor("#4287f5"));
+				camera.drawCircle(surfacePos, texelSize, surfaceX, surfaceZ, parseColor("#4287f5"), 1, [150/255, 185/255, 242/255, 0.5]);
 
-				camera.drawArrow(surfacePos, mad(surfaceNormal, 1, surfacePos), 10, "#009000");
+				camera.drawArrow(surfacePos, mad(surfaceNormal, 1, surfacePos), 10, [0,0.6,0,1]);
 				
-				var tangentX = cross(surfaceNormal, new Vector(0,0,1)).unit();
-				var tangentZ = cross(surfaceNormal, new Vector(1,0,0)).unit();
+				var tangentX = cross(surfaceNormal, new Vector(0,0,1));
+				var tangentZ = cross(surfaceNormal, new Vector(1,0,0));
 				
-				camera.drawArrow(surfacePos, mad(tangentZ, 1, surfacePos), 10, "#00C000");
-				camera.drawArrow(surfacePos, mad(tangentX, 1, surfacePos), 10, "#00C000");
+				tangentX = new Vector(surfaceNormal.y, -surfaceNormal.x, 0);
+				tangentZ = new Vector(0, -surfaceNormal.z, surfaceNormal.y);
+
+				camera.drawArrow(surfacePos, mad(tangentZ, 1, surfacePos), 10, [0,0.75,0,1]);
+				camera.drawArrow(surfacePos, mad(tangentX, 1, surfacePos), 10, [0,0.75,0,1]);
 
 				var intersection = mad(tangentX, -surfacePosX / tangentX.x, mad(tangentZ, -surfacePosZ / tangentZ.z, surfacePos));
-				camera.drawCircle(intersection, 0.1, xAxis, yAxis, "#000000");
+				camera.drawCircle(intersection, 0.1, xAxis, yAxis, [0,0,0,1]);
 			}
 
 			// Intersection
 			{
 				var t = dot(surfaceNormal, sub(surfacePos, lightPos)) / dot(surfaceNormal, lightDir);
-				camera.drawPoint(mad(lightDir, t, lightPos), "#FF0000");
+				camera.drawPoint(mad(lightDir, t, lightPos), [1,0,0,1]);
 			}
 		}
 

@@ -9,15 +9,24 @@ function Camera(mainCanvas,  svg)
 	var view_distance = 10;
 	var view_anglePhi = 60;
 	var view_angleTheta = -45;
+	var viewX;
+	var viewY;
+	var viewZ;
+	var invViewX;
+	var invViewY;
+	var invViewZ;
 	var FOV = 90;
 	var aspect = canvasW / canvasH;
 	var near = 0.1;
 	var far = 1000;
 	var orthographic = false;
 	var autoOrtho = true;
+	var view_position;
 
 	var viewMtx = new Array(4);
+	var viewMtxT = new Array(4);
 	var projMtx = new Array(4);
+	var viewProjMtx = new Array(16);
 
 	canvas.addEventListener('mousemove', onMouseMove, false);
 	canvas.addEventListener('mousedown', onMouseDown, false);
@@ -70,6 +79,26 @@ function Camera(mainCanvas,  svg)
 		return autoOrtho;
 	}
 
+	this.getAnglePhi = function()
+	{
+		return view_anglePhi;
+	}
+
+	this.getAngleTheta = function()
+	{
+		return view_angleTheta;
+	}
+
+	this.getViewTarget = function()
+	{
+		return view_target;
+	}
+
+	this.getViewDistance = function()
+	{
+		return view_distance;
+	}
+
 	this.setView = function(anglePhi, angleTheta, target, distance)
 	{
 		view_anglePhi		= (anglePhi == undefined)	? view_anglePhi		: anglePhi;
@@ -85,9 +114,6 @@ function Camera(mainCanvas,  svg)
 		canvasW = canvas.width;
 		canvasH = canvas.height;
 		aspect = canvasW / canvasH;
-
-		canvas.width = canvas.width;
-		canvas.height = canvas.height;
 
 		updateProjection();
 
@@ -121,11 +147,25 @@ function Camera(mainCanvas,  svg)
 		var y = new Vector( -sinY * sinX,	  cosX,	 -cosY*sinX);
 		var z = new Vector(  sinY * cosX,     sinX,   cosY*cosX);
 
-		var view_position = mad(z, -view_distance, view_target);
+		viewX = x;
+		viewY = y;
+		viewZ = z;
+
+		view_position = mad(z, -view_distance, view_target);
 
 		viewMtx[0] = [ x.x, x.y, x.z, -dot(view_position, x) ];
 		viewMtx[1] = [ y.x, y.y, y.z, -dot(view_position, y) ];
 		viewMtx[2] = [ z.x, z.y, z.z, -dot(view_position, z) ];
+
+		viewMtxT[0] = [ viewMtx[0][0], viewMtx[1][0], viewMtx[2][0], 0 ];
+		viewMtxT[1] = [ viewMtx[0][1], viewMtx[1][1], viewMtx[2][1], 0 ];
+		viewMtxT[2] = [ viewMtx[0][2], viewMtx[1][2], viewMtx[2][2], 0 ];
+		viewMtxT[3] = [ viewMtx[0][3], viewMtx[1][3], viewMtx[2][3], 1 ];
+
+
+		invViewX = new Vector(x.x, y.x, z.x);
+		invViewY = new Vector(x.y, y.y, z.y);
+		invViewZ = new Vector(x.z, y.z, z.z);
 
 		if (orthographic)
 		{
@@ -151,6 +191,14 @@ function Camera(mainCanvas,  svg)
 			projMtx[2] = [ 0, 0, F / (F-N),	-F*N / (F-N) ];
 			projMtx[3] = [ 0, 0, 1, 0 ];
 		}
+
+		for (var r=0; r!=4; ++r)
+		{
+			for (var c=0; c!=4; ++c)
+			{
+				viewProjMtx[r*4 + c] = dot4(viewMtxT[r], projMtx[c]);
+			}
+		}
 	}
 
 	function transformP(v)
@@ -168,10 +216,17 @@ function Camera(mainCanvas,  svg)
 
 		return screenPos;
 	}
+
+	this.transformN = function(v)
+	{
+		var v4 = [v.x, v.y, v.z, 0];
+		return new Vector(dot4(v4, viewMtx[0]), dot4(v4, viewMtx[1]), dot4(v4, viewMtx[2]));
+	}
 	
 	this.clear = function(color)
 	{
 		graphics.clear(color);
+		graphics.setViewProjMtx(viewProjMtx);
 	}
 
 	this.drawTarget = function()
@@ -194,31 +249,22 @@ function Camera(mainCanvas,  svg)
 
 	this.drawLine = function(a,b,color,width,dash,ownerObject)
 	{
-		return graphics.drawLine(transformP(a), transformP(b), color, width, dash);
+		return graphics.drawLine(a, b, color, width, dash);
 	}
 
 	this.drawLineStrip = function(points, closed, color, width, fillColor, dash)
 	{
-		var pixelPoints = [];
-
-		for (var i = 0; i < points.length; ++i)
-		{
-			pixelPoints.push(transformP(points[i]));
-		}
-
-		return graphics.drawLineStrip(pixelPoints, closed, color, width, dash, fillColor);
+		return graphics.drawLineStrip(points, closed, color, width, dash, fillColor);
 	}
 
 	this.drawLines = function(points, color, width, fillColor, dash)
 	{
-		var pixelPoints = [];
+		return graphics.drawLines(points, color, width, dash, fillColor);
+	}
 
-		for (var i = 0; i < points.length; ++i)
-		{
-			pixelPoints.push(transformP(points[i]));
-		}
-
-		return graphics.drawLines(pixelPoints, color, width, dash, fillColor);
+	this.drawTriangle = function(p0, p1, p2, color, fillColor, width, dash)
+	{
+		return graphics.drawTriangle(p0, p1, p2, color, fillColor, width, dash);
 	}
 
 	this.drawQuad = function(p, sizeX, sizeY, xAxis, yAxis, color, fillColor, width, dash)
@@ -299,7 +345,22 @@ function Camera(mainCanvas,  svg)
 
 	this.drawArrow = function(pStart, pEnd, sizeInPixels, color, width, dash)
 	{
-		return graphics.drawArrow(transformP(pStart), transformP(pEnd), sizeInPixels, color, width, dash);
+		var dir = sub(pEnd, pStart).unit();
+
+		var localX = cross( dir, sub(pEnd, view_position).unit() ).unit();
+
+		var pEnd4 = [pEnd.x, pEnd.y, pEnd.z, 1];
+		var z = dot4(pEnd4, viewMtx[2]);
+
+		var size = sizeInPixels / (canvasW/2) * z / projMtx[0][0];
+
+		var baseP = mad(dir, -size, pEnd);
+
+		var p0 = mad(localX, size/4, baseP);
+		var p1 = mad(localX, -size/4, baseP);
+
+		graphics.drawLine(pStart, pEnd, color, width, dash);
+		graphics.drawTriangle(pEnd, p0, p1, color, color, 1);
 	}
 
 	this.drawText3D = function(O,text,color,align, angle, font)
