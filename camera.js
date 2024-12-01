@@ -294,7 +294,23 @@ function Camera(mainCanvas,  svg)
 			points[i] = mad(xAxis, cosAngle * radius, mad(yAxis, sinAngle * radius, p));
 		}
 
-		return this.drawLineStrip(points, true, color, width, fillColor, dash);
+		if (fillColor != undefined)
+		{
+			var triPoints = new Array(segments * 3);
+		
+			for (var i = 0; i < segments; ++i)
+			{
+				triPoints[i*3 + 0] = points[i];
+				triPoints[i*3 + 1] = points[ (i+1) % points.length ];
+				triPoints[i*3 + 2] = p;
+			}
+
+			graphics.drawTriangleList(triPoints, color, fillColor, 0, dash);
+		}
+
+		graphics.setDepthOffset(-3);
+		this.drawLineStrip(points, true, color, width, fillColor, dash);
+		graphics.setDepthOffset(0);
 	}
 
 	this.drawCapsule = function(p, halfLength, radius, longAxis, shortAxis, color, width, fillColor, segments, dash)

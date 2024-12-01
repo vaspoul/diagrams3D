@@ -12,6 +12,7 @@ function Graphics(canvas_)
 	canvas2D.style.top = canvas.style.top;
 	canvas2D.style.zIndex = canvas.style.zIndex+1;
 	canvas2D.style.cursor = "none";
+	canvas2D.style.pointerEvents = "none";
 	canvas2D.tabIndex = -1;
 	if (canvas.parentNode != undefined)
 	{
@@ -20,11 +21,12 @@ function Graphics(canvas_)
 
 	var canvasAspect = canvasW / canvasH;
 	var context = canvas2D.getContext('2d');
-	var gl = canvas_.getContext('webgl');
+	var gl = canvas_.getContext('webgl', { alpha: false, depth: true });
 	var defaultShader;
 	var vertexBuffer;
 	var vsPositionLoc;
 	var vsViewProjMtxLoc;
+	var vsZOffsetLoc;
 	var psColorLoc;
 
 	function compileShader(gl, type, source) 
@@ -49,12 +51,14 @@ function Graphics(canvas_)
 		defaultShader = (function()
 		{
 			const vsCode = `
-				attribute	vec3 ATTRIB_Position;
-				uniform		mat4 g_viewProjMtx;
+				attribute	vec3	ATTRIB_Position;
+				uniform		mat4	g_viewProjMtx;
+				uniform		float	g_zOffset;
 			
 				void main() 
 				{
 					gl_Position = g_viewProjMtx * vec4(ATTRIB_Position, 1.0);
+					gl_Position.z += g_zOffset * gl_Position.w;
 				}`;
 
 			const psCode = `
@@ -90,6 +94,7 @@ function Graphics(canvas_)
 
 		vsPositionLoc		= gl.getAttribLocation(defaultShader, "ATTRIB_Position");
 		vsViewProjMtxLoc	= gl.getUniformLocation(defaultShader, "g_viewProjMtx");
+		vsZOffsetLoc		= gl.getUniformLocation(defaultShader, "g_zOffset");
 		psColorLoc			= gl.getUniformLocation(defaultShader, "g_color");
 	}
 
@@ -103,10 +108,15 @@ function Graphics(canvas_)
 		return context;
 	}
 
+	this.setDepthOffset = function(o)
+	{
+		gl.uniform1f(vsZOffsetLoc, o / Math.pow(2,16));
+	}
+
 	this.onResize = function()
 	{
 		context = canvas2D.getContext('2d');
-		gl = canvas_.getContext('webgl');
+		gl = canvas_.getContext('webgl', { alpha: false, depth: true });
 		canvasW = canvas.width;
 		canvasH = canvas.height;
 		canvasAspect = canvasW / canvasH;
@@ -118,7 +128,7 @@ function Graphics(canvas_)
 	this.drawLine = function(a,b,color,width,dash)
 	{
 		if (typeof(color) === "undefined")
-			color = "#000000";
+			color = [0,0,0,1];
 
 		if (typeof(width) === "undefined")
 			width = 1;
@@ -143,7 +153,7 @@ function Graphics(canvas_)
 			return;
 
 		if (typeof(color) === "undefined")
-			color = "#000000";
+			color = [0,0,0,1];
 
 		if (typeof(width) === "undefined")
 			width = 1;
@@ -176,11 +186,9 @@ function Graphics(canvas_)
 			gl.drawArrays(gl.LINE_STRIP, 0, glPoints.length/3);
 		}
 
-	//	if (fillColor !== undefined)
-	//	{
-	//		context.fillStyle = fillColor;
-	//		context.fill();
-	//	}
+		if (fillColor !== undefined)
+		{
+		}
 	}
 
 	this.drawLines = function(points, color, width, dash, fillColor)
@@ -189,7 +197,7 @@ function Graphics(canvas_)
 			return;
 
 		if (typeof(color) === "undefined")
-			color = "#000000";
+			color = [0,0,0,1];
 
 		if (typeof(width) === "undefined")
 			width = 1;
@@ -197,34 +205,33 @@ function Graphics(canvas_)
 		if (typeof(dash) === "undefined")
 			dash = [];
 
-		//context.lineWidth = width;
-		//context.strokeStyle = color;
-		//context.setLineDash(dash);
+		var glPoints = new Float32Array(points.length * 3);
 
-		context.beginPath();
-
-		for (var i = 0; i < points.length-1; i+=2)
+		for (var i = 0; i < points.length; ++i)
 		{
-			context.moveTo(points[i][0], points[i][1]);
-			context.lineTo(points[i+1][0], points[i+1][1]);
-		}
-
-		if (fillColor !== undefined)
-		{
-			context.fillStyle = fillColor;
-			context.fill();
+			glPoints[i*3 + 0] = points[i].x;
+			glPoints[i*3 + 1] = points[i].y;
+			glPoints[i*3 + 2] = points[i].z;
 		}
 
 		if (width > 0)
 		{
-			context.stroke();
+			gl.uniform4f(psColorLoc, ...color);
+
+			gl.lineWidth(width);
+			gl.bufferSubData(gl.ARRAY_BUFFER, 0, glPoints);
+			gl.drawArrays(gl.LINES, 0, glPoints.length/3);
+		}
+
+		if (fillColor !== undefined)
+		{
 		}
 	}
 
 	this.drawTriangle = function(p0, p1, p2, color, fillColor, width, dash)
 	{
 		if (typeof(color) === "undefined")
-			color = "#000000";
+			color = [0,0,0,1];
 
 		if (typeof(width) === "undefined")
 			width = 1;
@@ -266,10 +273,53 @@ function Graphics(canvas_)
 		}
 	}
 
+	this.drawTriangleList = function(points, color, fillColor, width, dash)
+	{
+		if (typeof(color) === "undefined")
+			color = [0,0,0,1];
+
+		if (typeof(width) === "undefined")
+			width = 1;
+
+		if (typeof(dash) === "undefined")
+			dash = [];
+
+		var glPoints = new Float32Array(points.length * 3);
+
+		for (var i = 0; i < points.length; ++i)
+		{
+			glPoints[i*3 + 0] = points[i].x;
+			glPoints[i*3 + 1] = points[i].y;
+			glPoints[i*3 + 2] = points[i].z;
+		}
+
+		gl.bufferSubData(gl.ARRAY_BUFFER, 0, glPoints);
+
+		if (fillColor != undefined)
+		{
+			gl.uniform4f(psColorLoc, ...fillColor);
+			//gl.depthMask(fillColor[3]>=1);
+
+			gl.drawArrays(gl.TRIANGLES, 0, glPoints.length);
+		}
+
+		if (width > 0)
+		{
+			gl.uniform4f(psColorLoc, ...color);
+
+			gl.lineWidth(width);
+
+			for (var i = 0; i < points.length; i+=3)
+			{
+				gl.drawArrays(gl.LINE_LOOP, i, 3);
+			}
+		}
+	}
+
 	this.drawArrow = function(pStart,pEnd,sizeInPixels, color,width,dash)
 	{
 		if (typeof(color) === "undefined")
-			color = "#000000";
+			color = [0,0,0,1];
 
 		if (typeof(dash) === "undefined")
 			dash = [];
@@ -378,10 +428,16 @@ function Graphics(canvas_)
 		
 		gl.disable(gl.CULL_FACE);
 
+		gl.enable(gl.BLEND);
+		gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+		gl.blendEquation(gl.FUNC_ADD);
+
 		gl.useProgram(defaultShader);
 		gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
 		gl.enableVertexAttribArray(vsPositionLoc);
 		gl.vertexAttribPointer(vsPositionLoc, 3, gl.FLOAT, false, 0, 0);
+
+		this.setDepthOffset(0);
 	}
 	
 	this.measureText = function(text, font)

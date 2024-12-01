@@ -150,9 +150,9 @@
 
 			// Draw receiver
 			{
-				camera.drawQuad(mad(xAxis, -surfacePosX*0.5, mad(zAxis, -surfacePosZ*0.5, surfacePos)), surfacePosX, surfacePosZ, xAxis, zAxis, parseColor("#4287f5"));
-				camera.drawPoint(surfacePos, parseColor("#4287f5"));
-				camera.drawCircle(surfacePos, texelSize, surfaceX, surfaceZ, parseColor("#4287f5"), 1, [150/255, 185/255, 242/255, 0.5]);
+				camera.drawQuad(mad(xAxis, -surfacePosX*0.5, mad(zAxis, -surfacePosZ*0.5, surfacePos)), surfacePosX, surfacePosZ, xAxis, zAxis, [66/255, 135/255, 245/255, 1]);
+				camera.drawPoint(surfacePos, [66/255, 135/255, 245/255, 1]);
+				camera.drawCircle(surfacePos, texelSize, surfaceX, surfaceZ, [66/255, 135/255, 245/255, 1], 1, [150/255, 185/255, 242/255, 0.5]);
 
 				camera.drawArrow(surfacePos, mad(surfaceNormal, 1, surfacePos), 10, [0,0.6,0,1]);
 				
