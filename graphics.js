@@ -28,6 +28,7 @@ function Graphics(canvas_)
 	var vsViewProjMtxLoc;
 	var vsZOffsetLoc;
 	var psColorLoc;
+	var depthOffset = 0;
 
 	function compileShader(gl, type, source) 
 	{
@@ -110,6 +111,7 @@ function Graphics(canvas_)
 
 	this.setDepthOffset = function(o)
 	{
+		depthOffset = o;
 		gl.uniform1f(vsZOffsetLoc, o / Math.pow(2,16));
 	}
 
@@ -266,10 +268,16 @@ function Graphics(canvas_)
 
 		if (width > 0)
 		{
+			var offsetBackup = depthOffset;
+
+			this.setDepthOffset(depthOffset - 3);
+
 			gl.uniform4f(psColorLoc, ...color);
 
 			gl.lineWidth(width);
 			gl.drawArrays(gl.LINE_LOOP, 0, 3);
+
+			this.setDepthOffset(offsetBackup);
 		}
 	}
 

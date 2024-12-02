@@ -229,6 +229,11 @@ function Camera(mainCanvas,  svg)
 		graphics.setViewProjMtx(viewProjMtx);
 	}
 
+	this.setDepthOffset = function(o)
+	{
+		graphics.setDepthOffset(o);
+	}
+
 	this.drawTarget = function()
 	{
 		this.drawPoint(view_target, "#000000");
