@@ -104,6 +104,21 @@ function Camera(mainCanvas,  svg)
 		return view_position;
 	}
 
+	this.getViewX = function()
+	{
+		return viewX;
+	}
+
+	this.getViewY = function()
+	{
+		return viewY;
+	}
+
+	this.getViewZ = function()
+	{
+		return viewZ;
+	}
+
 	this.setView = function(anglePhi, angleTheta, target, distance)
 	{
 		view_anglePhi		= (anglePhi == undefined)	? view_anglePhi		: anglePhi;
@@ -228,7 +243,26 @@ function Camera(mainCanvas,  svg)
 		var v4 = [v.x, v.y, v.z, 0];
 		return new Vector(dot4(v4, viewMtx[0]), dot4(v4, viewMtx[1]), dot4(v4, viewMtx[2]));
 	}
+
+	this.screenToWorld = function(x,y)
+	{
+		var ndcPos = new Vector(x/canvasW * 2 - 1,  1 - y/canvasH * 2, 0);
+		var n = orthographic ? 1 : near;
+		var viewPos = new Vector(ndcPos.x / projMtx[0][0] * n, ndcPos.y / projMtx[1][1] * n, near);
+		var worldPos = mad(viewX, viewPos.x, mad(viewY, viewPos.y, mad(viewZ, viewPos.z, view_position)));
+
+		return worldPos;
+	}
 	
+	this.pixelsToLength = function(x,y)
+	{
+		var ndcPos = {x: x/canvasW * 2, y:y/canvasH * 2};
+		var n = orthographic ? 1 : near;
+		var viewPos = {x: ndcPos.x / projMtx[0][0] * n, y:ndcPos.y / projMtx[1][1] * n };
+
+		return viewPos;
+	}
+
 	this.clear = function(color)
 	{
 		graphics.clear(color);
@@ -276,6 +310,12 @@ function Camera(mainCanvas,  svg)
 
 	this.drawQuad = function(p, sizeX, sizeY, xAxis, yAxis, color, fillColor, width, dash)
 	{
+		if (xAxis == undefined)
+			xAxis = new Vector(1,0,0);
+
+		if (yAxis == undefined)
+			yAxis = new Vector(0,1,0);
+
 		var points = new Array(4);
 
 		points[0] = mad(xAxis, -sizeX * 0.5, mad(yAxis, +sizeY * 0.5, p));
@@ -283,7 +323,12 @@ function Camera(mainCanvas,  svg)
 		points[2] = mad(xAxis, +sizeX * 0.5, mad(yAxis, -sizeY * 0.5, p));
 		points[3] = mad(xAxis, -sizeX * 0.5, mad(yAxis, -sizeY * 0.5, p));
 
-		return this.drawLineStrip(points, true, color, width, fillColor, dash);
+		this.drawTriangle(points[0], points[1], points[2], color, fillColor, 0);
+		this.drawTriangle(points[2], points[3], points[0], color, fillColor, 0);
+
+		graphics.setDepthOffset(-3);
+		this.drawLineStrip(points, true, color, width, fillColor, dash);
+		graphics.setDepthOffset(0);
 	}
 
 	this.drawCircle = function(p, radius, xAxis, yAxis, color, width, fillColor, segments, dash)
