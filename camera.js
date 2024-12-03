@@ -99,6 +99,11 @@ function Camera(mainCanvas,  svg)
 		return view_distance;
 	}
 
+	this.getViewPos = function()
+	{
+		return view_position;
+	}
+
 	this.setView = function(anglePhi, angleTheta, target, distance)
 	{
 		view_anglePhi		= (anglePhi == undefined)	? view_anglePhi		: anglePhi;
@@ -201,7 +206,7 @@ function Camera(mainCanvas,  svg)
 		}
 	}
 
-	function transformP(v)
+	this.transformP = function(v)
 	{
 		var v4 = [v.x, v.y, v.z, 1];
 		var viewPos = [ dot4(v4, viewMtx[0]), dot4(v4, viewMtx[1]), dot4(v4, viewMtx[2]), 1 ];
@@ -212,7 +217,8 @@ function Camera(mainCanvas,  svg)
 		projPos[1] /= projPos[3];
 		projPos[2] /= projPos[3];
 
-		var screenPos = [ (projPos[0] * 0.5 + 0.5) * canvasW, (-projPos[1] * 0.5 + 0.5) * canvasH, projPos[2], projPos[3] ];
+		var screenPos = new Vector((projPos[0] * 0.5 + 0.5) * canvasW, (-projPos[1] * 0.5 + 0.5) * canvasH, projPos[2]);
+		screenPos.w = projPos[3];
 
 		return screenPos;
 	}
@@ -236,20 +242,16 @@ function Camera(mainCanvas,  svg)
 
 	this.drawTarget = function()
 	{
-		this.drawPoint(view_target, "#000000");
+		this.drawPoint(view_target, [0,0,0,1]);
 	}
 
 	this.drawPoint = function(p, color)
 	{
-		var p = transformP(p);
-		var s = 2;
+		var sp = this.transformP(p);
 
-		var points = [	[ p[0] - s, p[1] - s, 1, view_distance ],
-						[ p[0] + s, p[1] - s, 1, view_distance ],
-						[ p[0] + s, p[1] + s, 1, view_distance ],
-						[ p[0] - s, p[1] + s, 1, view_distance ] ];
+		var size = 2 / (canvasW/2) * sp.w / projMtx[0][0];
 
-		return graphics.drawLineStrip(points, true, color, 1);
+		this.drawQuad(p, size, size, viewX, viewY, color, color, 1);
 	}
 
 	this.drawLine = function(a,b,color,width,dash,ownerObject)
@@ -386,9 +388,9 @@ function Camera(mainCanvas,  svg)
 
 	this.drawText3D = function(O,text,color,align, angle, font)
 	{
-		O = transformP(O);
+		O = this.transformP(O);
 
-		return graphics.drawText(O[0], o[1], text,color,align,angle,font);
+		return graphics.drawText(O.x, o.y, text,color,align,angle,font);
 	}
 
 	this.drawText2D = function(x,y,text,color,align, angle, font)
@@ -418,7 +420,7 @@ function Camera(mainCanvas,  svg)
 
 	function onMouseMove(evt)
 	{
-		if (evt.buttons & 1) // rotate
+		if (evt.altKey && evt.buttons & 1) // rotate
 		{
 			var deltaX = evt.clientX - mousePosDragStart.x;
 			var deltaY = evt.clientY - mousePosDragStart.y;
@@ -437,7 +439,7 @@ function Camera(mainCanvas,  svg)
 
 			updateProjection();
 		}
-		else if (evt.buttons & 4) // pan
+		else if (evt.altKey && evt.buttons & 4) // pan
 		{
 			var depth = orthographic ? 1 : view_distance;
 			var deltaX = -(evt.clientX - mousePosDragStart.x) / (canvasW / 2) * depth / projMtx[0][0];
@@ -451,7 +453,7 @@ function Camera(mainCanvas,  svg)
 
 			updateProjection();
 		}
-		else if (evt.buttons & 2) // zoom
+		else if (evt.altKey && evt.buttons & 2) // zoom
 		{
 			var deltaX = (evt.clientX - mousePosDragStart.x) / zoomSensitivity;
 			var deltaY = (evt.clientY - mousePosDragStart.y) / zoomSensitivity;

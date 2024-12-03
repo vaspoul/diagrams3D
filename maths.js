@@ -466,6 +466,23 @@ function intersectRayRay(rayStart, rayDir, otherRayStart, otherRayDir)
 	return result;
 }
 
+function pointInsideTriangle(p0, p1, p2, p)
+{
+	var p01 = sub(p1, p0).unit();
+	var p12 = sub(p2, p1).unit();
+	var p20 = sub(p0, p2).unit();
+	var N = cross(p01, p12).unit();
+	var N01 = cross(N, p01).unit();
+	var N12 = cross(N, p12).unit();
+	var N20 = cross(N, p20).unit();
+
+	var inside01 = dot(sub(p,p0), N01)>=0;
+	var inside12 = dot(sub(p,p1), N12)>=0;
+	var inside20 = dot(sub(p,p2), N20)>=0;
+
+	return inside01 && inside12 && inside20;
+}
+
 var pseudoRandom = {};
 
 (function()
