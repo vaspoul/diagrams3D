@@ -123,7 +123,7 @@ function Camera(mainCanvas,  svg)
 	{
 		view_anglePhi		= (anglePhi == undefined)	? view_anglePhi		: anglePhi;
 		view_angleTheta		= (angleTheta == undefined) ? view_angleTheta	: angleTheta;
-		view_target			= (target == undefined)		? view_target		: target;
+		view_target			= (target == undefined)		? view_target		: target.copy();
 		view_distance		= (distance == undefined)	? view_distance		: distance;
 
 		updateProjection();
@@ -525,8 +525,11 @@ function Camera(mainCanvas,  svg)
 
 	function onMouseDblClick(evt)
 	{
-		view_target = new Vector(0,0,0);
-		updateProjection();
+		if (evt.altKey)
+		{
+			view_target = new Vector(0,0,0);
+			updateProjection();
+		}
 	}
 
 	function onKeyDown(evt)
