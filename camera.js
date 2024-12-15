@@ -420,7 +420,7 @@ function Camera(mainCanvas,  svg)
 		var pEnd4 = [pEnd.x, pEnd.y, pEnd.z, 1];
 		var z = dot4(pEnd4, viewMtx[2]);
 
-		var size = sizeInPixels / (canvasW/2) * z / projMtx[0][0];
+		var size = sizeInPixels / (canvasW/2) * (z * projMtx[3][2] + projMtx[3][3]) / projMtx[0][0];
 
 		var baseP = mad(dir, -size, pEnd);
 
